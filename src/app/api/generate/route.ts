@@ -195,7 +195,7 @@ export async function POST(req: NextRequest) {
           textFields: request.textFields,
           styleId: request.styleId,
           influenceIds: request.influenceIds,
-          tones: request.tones,
+          tones: request.tones || [],
           formatId: request.formatId,
           colorMode: request.colorMode,
           customColors: request.customColors,
