@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import BriefInput from "@/components/BriefInput";
@@ -24,7 +24,7 @@ const initialState: PosterFormState = {
   customColors: [],
 };
 
-export default function Home() {
+function HomeContent() {
   const searchParams = useSearchParams();
   const [form, setForm] = useState<PosterFormState>(initialState);
   const [posters, setPosters] = useState<GeneratedPoster[]>([]);
@@ -243,5 +243,13 @@ export default function Home() {
         </div>
       </footer>
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={null}>
+      <HomeContent />
+    </Suspense>
   );
 }
