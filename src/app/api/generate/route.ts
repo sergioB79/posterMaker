@@ -198,7 +198,7 @@ export async function POST(req: NextRequest) {
           tones: request.tones || [],
           formatId: request.formatId,
           colorMode: request.colorMode,
-          customColors: request.customColors,
+          customColors: request.customColors || [],
         });
         posters.push({
           id: saved.id,
