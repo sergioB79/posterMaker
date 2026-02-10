@@ -10,11 +10,11 @@ async function generateImage(
   width: number,
   height: number
 ): Promise<string> {
-  const apiKey = (process.env.POSTER_API_KEY || process.env.OPENAI_API_KEY)?.trim();
+  const apiKey = (process.env.PosterMaker_OPENAI_API_KEY || process.env.POSTER_API_KEY || process.env.OPENAI_API_KEY)?.trim();
 
   if (!apiKey) {
     throw new Error(
-      "No API key configured. Set POSTER_API_KEY or OPENAI_API_KEY in .env.local."
+      "No API key configured. Set PosterMaker_OPENAI_API_KEY in .env.local."
     );
   }
 

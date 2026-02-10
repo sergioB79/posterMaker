@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 // Diagnostic endpoint — shows env key status (GET without ?test)
 // or runs a real gpt-image-1 test (GET with ?test=1, costs ~$0.04)
 export async function GET(req: Request) {
-  const apiKey = (process.env.POSTER_API_KEY || process.env.OPENAI_API_KEY)?.trim();
+  const apiKey = (process.env.PosterMaker_OPENAI_API_KEY || process.env.POSTER_API_KEY || process.env.OPENAI_API_KEY)?.trim();
   const url = new URL(req.url);
   const runTest = url.searchParams.get("test") === "1";
 
