@@ -55,8 +55,11 @@ export default function PosterPreview({
     }
   };
 
+  const [saveError, setSaveError] = useState<string>();
+
   const handleSave = async (poster: GeneratedPoster) => {
     setSaving((prev) => ({ ...prev, [poster.id]: true }));
+    setSaveError(undefined);
     try {
       const res = await fetch("/api/save", {
         method: "POST",
@@ -77,9 +80,12 @@ export default function PosterPreview({
       });
       if (res.ok) {
         setSaved((prev) => ({ ...prev, [poster.id]: true }));
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setSaveError(data.error || `Save failed (${res.status})`);
       }
-    } catch {
-      // silent fail
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Save failed");
     } finally {
       setSaving((prev) => ({ ...prev, [poster.id]: false }));
     }
@@ -197,6 +203,13 @@ export default function PosterPreview({
           <pre className="text-[11px] text-neutral-500 whitespace-pre-wrap font-mono leading-relaxed">
             {selected.prompt}
           </pre>
+        </div>
+      )}
+
+      {/* Save error */}
+      {saveError && (
+        <div className="mx-4 mb-2 rounded-lg bg-red-500/10 border border-red-500/20 px-3 py-2 text-xs text-red-400">
+          Save error: {saveError}
         </div>
       )}
 

@@ -97,21 +97,12 @@ export default function Home() {
               Poster Maker
             </h1>
           </div>
-          <div className="flex items-center gap-4">
-            <Link
-              href="/gallery"
-              className="text-xs text-neutral-400 hover:text-orange-300 transition-colors"
-            >
-              Gallery
-            </Link>
-            <button
-              type="button"
-              onClick={handleReset}
-              className="text-xs text-neutral-500 hover:text-neutral-300 transition-colors"
-            >
-              Reset all
-            </button>
-          </div>
+          <Link
+            href="/gallery"
+            className="text-xs text-neutral-400 hover:text-orange-300 transition-colors"
+          >
+            Gallery
+          </Link>
         </div>
       </header>
 
@@ -191,6 +182,15 @@ export default function Home() {
               ) : (
                 "Generate Poster"
               )}
+            </button>
+
+            {/* Reset */}
+            <button
+              type="button"
+              onClick={handleReset}
+              className="w-full text-xs text-neutral-500 hover:text-neutral-300 transition-colors py-2"
+            >
+              Reset all fields
             </button>
           </div>
 
