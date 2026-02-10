@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import Link from "next/link";
 import BriefInput from "@/components/BriefInput";
 import TextFieldsEditor from "@/components/TextFieldsEditor";
 import StyleSelector from "@/components/StyleSelector";
@@ -17,7 +18,7 @@ const initialState: PosterFormState = {
   styleId: "auto",
   influenceIds: [],
   formatId: "a4-portrait",
-  tone: "",
+  tones: [],
   colorMode: "auto",
   customColors: [],
 };
@@ -86,14 +87,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center">
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="white"
-                strokeWidth="2"
-              >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
                 <rect x="3" y="3" width="18" height="18" rx="2" />
                 <path d="M3 9h18" />
                 <path d="M9 21V9" />
@@ -103,13 +97,21 @@ export default function Home() {
               Poster Maker
             </h1>
           </div>
-          <button
-            type="button"
-            onClick={handleReset}
-            className="text-xs text-neutral-500 hover:text-neutral-300 transition-colors"
-          >
-            Reset all
-          </button>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/gallery"
+              className="text-xs text-neutral-400 hover:text-orange-300 transition-colors"
+            >
+              Gallery
+            </Link>
+            <button
+              type="button"
+              onClick={handleReset}
+              className="text-xs text-neutral-500 hover:text-neutral-300 transition-colors"
+            >
+              Reset all
+            </button>
+          </div>
         </div>
       </header>
 
@@ -144,8 +146,8 @@ export default function Home() {
             />
 
             <ToneSelector
-              value={form.tone}
-              onChange={(v) => updateForm("tone", v)}
+              selected={form.tones}
+              onChange={(v) => updateForm("tones", v)}
             />
 
             {/* Variations count */}
@@ -180,24 +182,9 @@ export default function Home() {
             >
               {isLoading ? (
                 <span className="flex items-center justify-center gap-2">
-                  <svg
-                    className="animate-spin h-4 w-4"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                  >
-                    <circle
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="3"
-                      className="opacity-25"
-                    />
-                    <path
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                      className="opacity-75"
-                    />
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" className="opacity-25" />
+                    <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" className="opacity-75" />
                   </svg>
                   Generating...
                 </span>
@@ -213,6 +200,7 @@ export default function Home() {
               posters={posters}
               isLoading={isLoading}
               error={error}
+              formState={form}
             />
           </div>
         </div>

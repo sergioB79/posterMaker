@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
       styleId,
       influenceIds,
       formatId,
-      tone,
+      tones,
       colorMode,
       customColors,
     } = body;
@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
       styleId: styleId || "auto",
       influenceIds: influenceIds || [],
       formatId: formatId || "a4-portrait",
-      tone,
+      tones: tones || [],
       colorMode,
       customColors,
     };

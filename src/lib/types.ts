@@ -6,7 +6,7 @@ export interface PosterFormState {
   styleId: string;
   influenceIds: string[];
   formatId: string;
-  tone: string;
+  tones: string[];
   colorMode: "auto" | "custom";
   customColors: string[];
 }
@@ -16,6 +16,19 @@ export interface GeneratedPoster {
   imageUrl: string;
   prompt: string;
   variationIndex: number;
+}
+
+export interface SavedPoster {
+  id: string;
+  filename: string;
+  prompt: string;
+  brief: string;
+  styleId: string;
+  influenceIds: string[];
+  tones: string[];
+  formatId: string;
+  createdAt: string;
+  folder: string;
 }
 
 export interface GenerationResult {
