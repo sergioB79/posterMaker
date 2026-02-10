@@ -8,7 +8,7 @@ import InfluenceSelector from "@/components/InfluenceSelector";
 import FormatSelector from "@/components/FormatSelector";
 import ToneSelector from "@/components/ToneSelector";
 import PosterPreview from "@/components/PosterPreview";
-import type { PosterFormState } from "@/lib/types";
+import type { PosterFormState, GeneratedPoster } from "@/lib/types";
 import type { TextField } from "@/lib/prompt-builder";
 
 const initialState: PosterFormState = {
