@@ -12,13 +12,16 @@ async function generateImage(
   width: number,
   height: number
 ): Promise<string> {
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = process.env.OPENAI_API_KEY?.trim();
 
   if (!apiKey) {
     throw new Error(
       "No API key configured. Set OPENAI_API_KEY in .env.local for DALL-E, or adapt this function for your image generation provider."
     );
   }
+
+  // Debug: log key prefix to verify it's being read correctly
+  console.log(`[generate] API key loaded: ${apiKey.slice(0, 10)}...${apiKey.slice(-4)} (length: ${apiKey.length})`);
 
   // Using DALL-E 3 as the default image generation backend
   // The system prompt is merged into the user prompt for DALL-E
