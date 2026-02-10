@@ -23,10 +23,13 @@ export interface SavedPoster {
   filename: string;
   prompt: string;
   brief: string;
+  textFields: TextField[];
   styleId: string;
   influenceIds: string[];
   tones: string[];
   formatId: string;
+  colorMode: "auto" | "custom";
+  customColors: string[];
   createdAt: string;
   folder: string;
 }

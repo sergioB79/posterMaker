@@ -70,10 +70,13 @@ export default function PosterPreview({
           metadata: formState
             ? {
                 brief: formState.brief,
+                textFields: formState.textFields,
                 styleId: formState.styleId,
                 influenceIds: formState.influenceIds,
                 tones: formState.tones,
                 formatId: formState.formatId,
+                colorMode: formState.colorMode,
+                customColors: formState.customColors,
               }
             : {},
         }),

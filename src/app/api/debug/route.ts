@@ -3,14 +3,14 @@ import { NextResponse } from "next/server";
 // Diagnostic endpoint — shows env key status (GET without ?test)
 // or runs a real gpt-image-1 test (GET with ?test=1, costs ~$0.04)
 export async function GET(req: Request) {
-  const apiKey = (process.env.PosterMaker_OPENAI_API_KEY || process.env.POSTER_API_KEY || process.env.OPENAI_API_KEY)?.trim();
+  const apiKey = process.env.PosterMaker_OPENAI_API_KEY?.trim();
   const url = new URL(req.url);
   const runTest = url.searchParams.get("test") === "1";
 
   if (!apiKey) {
     return NextResponse.json({
       status: "error",
-      message: "No API key found. Set POSTER_API_KEY or OPENAI_API_KEY in .env.local",
+      message: "No API key found. Set PosterMaker_OPENAI_API_KEY in .env.local",
     }, { status: 500 });
   }
 

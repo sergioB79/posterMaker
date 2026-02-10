@@ -49,10 +49,13 @@ export async function POST(req: NextRequest) {
       filename: imageFilename,
       prompt: prompt || "",
       brief: metadata?.brief || "",
+      textFields: metadata?.textFields || [],
       styleId: metadata?.styleId || "",
       influenceIds: metadata?.influenceIds || [],
       tones: metadata?.tones || [],
       formatId: metadata?.formatId || "",
+      colorMode: metadata?.colorMode || "auto",
+      customColors: metadata?.customColors || [],
       createdAt: now.toISOString(),
       folder: dateStr,
     };

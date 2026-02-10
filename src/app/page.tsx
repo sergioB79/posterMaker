@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import BriefInput from "@/components/BriefInput";
 import TextFieldsEditor from "@/components/TextFieldsEditor";
 import StyleSelector from "@/components/StyleSelector";
@@ -24,6 +25,7 @@ const initialState: PosterFormState = {
 };
 
 export default function Home() {
+  const searchParams = useSearchParams();
   const [form, setForm] = useState<PosterFormState>(initialState);
   const [posters, setPosters] = useState<GeneratedPoster[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -79,6 +81,33 @@ export default function Home() {
     setPosters([]);
     setError(undefined);
   };
+
+  useEffect(() => {
+    const shouldLoad = searchParams.get("load") === "1";
+    if (!shouldLoad) {
+      return;
+    }
+
+    try {
+      const raw = localStorage.getItem("posterMaker:load");
+      if (!raw) {
+        return;
+      }
+      const parsed = JSON.parse(raw);
+      if (parsed?.form) {
+        setForm((prev) => ({
+          ...prev,
+          ...parsed.form,
+        }));
+        setPosters([]);
+        setError(undefined);
+      }
+    } catch {
+      // ignore parse errors
+    } finally {
+      localStorage.removeItem("posterMaker:load");
+    }
+  }, [searchParams]);
 
   return (
     <div className="min-h-screen bg-neutral-950">

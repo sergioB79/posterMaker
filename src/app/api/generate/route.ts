@@ -4,14 +4,19 @@ import path from "path";
 import { buildVariationPrompt, type PosterRequest } from "@/lib/prompt-builder";
 
 // Uses gpt-image-1 — much better at rendering text on posters than DALL-E 3.
+// Set your API key env var in .env.local: PosterMaker_OPENAI_API_KEY
 
 async function generateImage(
   system: string,
   userPrompt: string,
   width: number,
   height: number
-): Promise<{ b64: string; url?: string }> {
-  const apiKey = (process.env.PosterMaker_OPENAI_API_KEY || process.env.POSTER_API_KEY || process.env.OPENAI_API_KEY)?.trim();
+): Promise<string> {
+  const apiKey = (
+    process.env.PosterMaker_OPENAI_API_KEY ||
+    process.env.POSTER_API_KEY ||
+    process.env.OPENAI_API_KEY
+  )?.trim();
 
   if (!apiKey) {
     throw new Error(
@@ -59,20 +64,27 @@ async function generateImage(
   const result = data.data?.[0];
 
   if (result?.b64_json) {
-    return { b64: result.b64_json };
+    return `data:image/png;base64,${result.b64_json}`;
   }
   if (result?.url) {
-    return { url: result.url, b64: "" };
+    return result.url;
   }
 
   throw new Error("No image data in response");
 }
 
-async function saveToFile(
-  b64: string,
-  prompt: string,
-  metadata: Record<string, unknown>
-): Promise<{ id: string; imagePath: string }> {
+async function savePosterToDisk(params: {
+  imageData: string;
+  prompt: string;
+  brief: string;
+  textFields: PosterRequest["textFields"];
+  styleId: string;
+  influenceIds: string[];
+  tones: string[];
+  formatId: string;
+  colorMode: PosterRequest["colorMode"];
+  customColors: string[];
+}) {
   const now = new Date();
   const dateStr = now.toISOString().split("T")[0];
   const timeStr = now.toTimeString().split(" ")[0].replace(/:/g, "-");
@@ -84,28 +96,40 @@ async function saveToFile(
   const imageFilename = `${id}.png`;
   const metaFilename = `${id}.json`;
 
-  // Save image
-  const imageBuffer = Buffer.from(b64, "base64");
+  let imageBuffer: Buffer;
+  if (params.imageData.startsWith("data:image")) {
+    const base64 = params.imageData.split(",")[1] || "";
+    imageBuffer = Buffer.from(base64, "base64");
+  } else {
+    const res = await fetch(params.imageData);
+    const arrayBuf = await res.arrayBuffer();
+    imageBuffer = Buffer.from(arrayBuf);
+  }
+
   await writeFile(path.join(folderPath, imageFilename), imageBuffer);
 
-  // Save metadata
   const meta = {
     id,
     filename: imageFilename,
-    prompt,
-    ...metadata,
+    prompt: params.prompt || "",
+    brief: params.brief || "",
+    textFields: params.textFields || [],
+    styleId: params.styleId || "",
+    influenceIds: params.influenceIds || [],
+    tones: params.tones || [],
+    formatId: params.formatId || "",
+    colorMode: params.colorMode || "auto",
+    customColors: params.customColors || [],
     createdAt: now.toISOString(),
     folder: dateStr,
   };
+
   await writeFile(
     path.join(folderPath, metaFilename),
     JSON.stringify(meta, null, 2)
   );
 
-  return {
-    id,
-    imagePath: `/api/images?path=created/${dateStr}/${imageFilename}`,
-  };
+  return { id };
 }
 
 export async function POST(req: NextRequest) {
@@ -159,38 +183,29 @@ export async function POST(req: NextRequest) {
     }> = [];
     const errors: string[] = [];
 
-    const metadata = {
-      brief,
-      styleId: request.styleId,
-      influenceIds: request.influenceIds,
-      tones: request.tones || [],
-      formatId: request.formatId,
-    };
-
     for (let i = 0; i < numVariations; i++) {
       const { system, user } = buildVariationPrompt(request, i, numVariations);
 
       try {
-        const result = await generateImage(system, user, width, height);
-
-        if (result.b64) {
-          // Auto-save to disk and return file path (not base64)
-          const saved = await saveToFile(result.b64, user, metadata);
-          posters.push({
-            id: saved.id,
-            imageUrl: saved.imagePath,
-            prompt: user,
-            variationIndex: i,
-          });
-          console.log(`[generate] Variation ${i} saved: ${saved.id}`);
-        } else if (result.url) {
-          posters.push({
-            id: `poster-${Date.now()}-${i}`,
-            imageUrl: result.url,
-            prompt: user,
-            variationIndex: i,
-          });
-        }
+        const imageUrl = await generateImage(system, user, width, height);
+        const saved = await savePosterToDisk({
+          imageData: imageUrl,
+          prompt: user,
+          brief: request.brief,
+          textFields: request.textFields,
+          styleId: request.styleId,
+          influenceIds: request.influenceIds,
+          tones: request.tones,
+          formatId: request.formatId,
+          colorMode: request.colorMode,
+          customColors: request.customColors,
+        });
+        posters.push({
+          id: saved.id,
+          imageUrl,
+          prompt: user.slice(0, 500),
+          variationIndex: i,
+        });
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Unknown error";
         console.error(`[generate] Variation ${i} failed:`, msg);

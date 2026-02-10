@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { SavedPoster } from "@/lib/types";
 import { artists } from "@/data/artists";
 import { styles } from "@/data/styles";
 
 export default function GalleryPage() {
+  const router = useRouter();
   const [posters, setPosters] = useState<(SavedPoster & { imagePath: string })[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPoster, setSelectedPoster] = useState<(SavedPoster & { imagePath: string }) | null>(null);
@@ -38,6 +40,29 @@ export default function GalleryPage() {
 
   const getStyleName = (id: string) =>
     styles.find((s) => s.id === id)?.name || id;
+
+  const buildFormState = (poster: SavedPoster) => ({
+    brief: poster.brief || "",
+    textFields: poster.textFields || [],
+    styleId: poster.styleId || "auto",
+    influenceIds: poster.influenceIds || [],
+    formatId: poster.formatId || "a4-portrait",
+    tones: poster.tones || [],
+    colorMode: poster.colorMode || "auto",
+    customColors: poster.customColors || [],
+  });
+
+  const handleLoadToEditor = (poster: SavedPoster) => {
+    try {
+      localStorage.setItem(
+        "posterMaker:load",
+        JSON.stringify({ form: buildFormState(poster) })
+      );
+    } catch {
+      // If storage fails, still navigate
+    }
+    router.push("/?load=1");
+  };
 
   return (
     <div className="min-h-screen bg-neutral-950">
@@ -249,6 +274,15 @@ export default function GalleryPage() {
               >
                 Download PNG
               </a>
+
+              {/* Load into editor */}
+              <button
+                type="button"
+                onClick={() => handleLoadToEditor(selectedPoster)}
+                className="w-full mt-2 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-xs font-medium py-2 transition-colors border border-neutral-700"
+              >
+                Load in editor
+              </button>
             </div>
           </div>
         </div>
