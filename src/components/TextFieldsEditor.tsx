@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { TextField } from "@/lib/prompt-builder";
 
 interface TextFieldsEditorProps {
@@ -20,6 +21,8 @@ export default function TextFieldsEditor({
   fields,
   onChange,
 }: TextFieldsEditorProps) {
+  const [bulkRandom, setBulkRandom] = useState(true);
+  const [bulkColor, setBulkColor] = useState("#ffffff");
   const addField = () => {
     onChange([
       ...fields,
@@ -41,6 +44,15 @@ export default function TextFieldsEditor({
 
   const removeField = (id: string) => {
     onChange(fields.filter((f) => f.id !== id));
+  };
+
+  const setAllColors = (nextColor: TextField["color"]) => {
+    onChange(
+      fields.map((f) => ({
+        ...f,
+        color: nextColor,
+      }))
+    );
   };
 
   return (
@@ -70,12 +82,13 @@ export default function TextFieldsEditor({
               key={field.id}
               className="rounded-lg bg-neutral-800/50 border border-neutral-700/50 p-3 space-y-2"
             >
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                value={field.label}
-                onChange={(e) =>
-                  updateField(field.id, { label: e.target.value })
+              {/* Row 1: label + priority + remove */}
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={field.label}
+                  onChange={(e) =>
+                    updateField(field.id, { label: e.target.value })
                 }
                 placeholder={`Label (e.g. ${
                   idx === 0
@@ -88,54 +101,27 @@ export default function TextFieldsEditor({
                 })`}
                 className="flex-1 rounded bg-neutral-800 border border-neutral-700 px-2.5 py-1.5 text-sm text-white placeholder-neutral-500 focus:outline-none focus:ring-1 focus:ring-orange-500/50"
               />
-              <select
-                value={field.priority}
-                onChange={(e) =>
-                  updateField(field.id, {
-                    priority: e.target.value as TextField["priority"],
-                  })
-                }
-                className="rounded bg-neutral-800 border border-neutral-700 px-2 py-1.5 text-xs text-neutral-300 focus:outline-none focus:ring-1 focus:ring-orange-500/50"
-              >
-                {priorities.map((p) => (
-                  <option key={p} value={p}>
-                    {priorityLabels[p]}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={colorMode}
-                onChange={(e) => {
-                  const nextMode = e.target.value;
-                  updateField(field.id, {
-                    color:
-                      nextMode === "custom"
-                        ? colorValue
-                        : "random",
-                  });
-                }}
-                className="rounded bg-neutral-800 border border-neutral-700 px-2 py-1.5 text-xs text-neutral-300 focus:outline-none focus:ring-1 focus:ring-orange-500/50"
-                title="Color"
-              >
-                <option value="random">Color: Random</option>
-                <option value="custom">Color: Pick</option>
-              </select>
-              <input
-                type="color"
-                value={colorValue}
-                onChange={(e) =>
-                  updateField(field.id, { color: e.target.value })
-                }
-                disabled={colorMode === "random"}
-                className="h-7 w-9 rounded border border-neutral-700 bg-neutral-800 p-0.5 disabled:opacity-50"
-                title="Pick color"
-              />
-              <button
-                type="button"
-                onClick={() => removeField(field.id)}
-                className="text-neutral-500 hover:text-red-400 transition-colors p-1"
-                title="Remove field"
-              >
+                <select
+                  value={field.priority}
+                  onChange={(e) =>
+                    updateField(field.id, {
+                      priority: e.target.value as TextField["priority"],
+                    })
+                  }
+                  className="rounded bg-neutral-800 border border-neutral-700 px-2 py-1.5 text-xs text-neutral-300 focus:outline-none focus:ring-1 focus:ring-orange-500/50"
+                >
+                  {priorities.map((p) => (
+                    <option key={p} value={p}>
+                      {priorityLabels[p]}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => removeField(field.id)}
+                  className="text-neutral-500 hover:text-red-400 transition-colors p-1"
+                  title="Remove field"
+                >
                 <svg
                   width="14"
                   height="14"
@@ -149,6 +135,7 @@ export default function TextFieldsEditor({
                 </svg>
               </button>
             </div>
+            {/* Row 2: content */}
             <input
               type="text"
               value={field.content}
@@ -158,9 +145,74 @@ export default function TextFieldsEditor({
               placeholder="Text content..."
               className="w-full rounded bg-neutral-800 border border-neutral-700 px-2.5 py-1.5 text-sm text-white placeholder-neutral-500 focus:outline-none focus:ring-1 focus:ring-orange-500/50"
             />
+            {/* Row 3: color */}
+            <div className="flex items-center gap-3">
+              <label className="inline-flex items-center gap-2 text-xs text-neutral-400">
+                <input
+                  type="checkbox"
+                  checked={colorMode === "random"}
+                  onChange={(e) =>
+                    updateField(field.id, {
+                      color: e.target.checked ? "random" : colorValue,
+                    })
+                  }
+                  className="h-3.5 w-3.5 rounded border-neutral-600 bg-neutral-800"
+                />
+                Random color
+              </label>
+              <input
+                type="color"
+                value={colorValue}
+                onChange={(e) =>
+                  updateField(field.id, { color: e.target.value })
+                }
+                disabled={colorMode === "random"}
+                className="h-7 w-9 rounded border border-neutral-700 bg-neutral-800 p-0.5 disabled:opacity-50"
+                title="Pick color"
+              />
+              <span className="text-[11px] text-neutral-500">
+                {colorMode === "random" ? "Random" : colorValue}
+              </span>
+            </div>
             </div>
           );
         })}
+
+        {fields.length > 0 && (
+          <div className="rounded-lg bg-neutral-900/60 border border-neutral-800 px-3 py-2 text-xs text-neutral-400">
+            <div className="flex items-center gap-3">
+              <span className="text-neutral-300">Override all colors:</span>
+              <label className="inline-flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={bulkRandom}
+                  onChange={(e) => {
+                    const next = e.target.checked;
+                    setBulkRandom(next);
+                    setAllColors(next ? "random" : bulkColor);
+                  }}
+                  className="h-3.5 w-3.5 rounded border-neutral-600 bg-neutral-800"
+                />
+                Random
+              </label>
+              <input
+                type="color"
+                value={bulkColor}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setBulkColor(next);
+                  setBulkRandom(false);
+                  setAllColors(next);
+                }}
+                className="h-6 w-8 rounded border border-neutral-700 bg-neutral-800 p-0.5"
+                title="Pick one color for all"
+              />
+              <span className="text-[11px] text-neutral-500">
+                {bulkRandom ? "Random" : bulkColor}
+              </span>
+            </div>
+          </div>
+        )}
 
         {fields.length === 0 && (
           <button
