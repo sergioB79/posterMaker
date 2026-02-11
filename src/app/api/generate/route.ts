@@ -1,4 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { checkCredits, deductCredits } from "@/lib/credits";
+import { prisma } from "@/lib/prisma";
 import { buildVariationPrompt, type PosterRequest } from "@/lib/prompt-builder";
 import { put } from "@vercel/blob";
 
@@ -145,6 +149,15 @@ async function savePosterToDisk(params: {
 
 export async function POST(req: NextRequest) {
   try {
+    // Auth check
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: "Sign in to generate posters" },
+        { status: 401 }
+      );
+    }
+
     const body = (await req.json()) as PosterRequest & {
       variations?: number;
     };
@@ -180,10 +193,38 @@ export async function POST(req: NextRequest) {
 
     const numVariations = Math.min(body.variations || 4, 6);
 
+    // Credit check — 1 credit per image
+    const { ok, credits } = await checkCredits(session.user.id, numVariations);
+    if (!ok) {
+      return NextResponse.json(
+        {
+          error: `Insufficient credits. You have ${credits} but need ${numVariations}. Buy more credits or reduce variations.`,
+          credits,
+        },
+        { status: 402 }
+      );
+    }
+
     const { formats } = await import("@/data/styles");
     const format = formats.find((f) => f.id === request.formatId);
     const width = format?.width || 2480;
     const height = format?.height || 3508;
+
+    // Record generation in database
+    const generation = await prisma.generation.create({
+      data: {
+        userId: session.user.id,
+        prompt: brief,
+        brief,
+        styleId: request.styleId,
+        formatId: request.formatId,
+        images: numVariations,
+        credits: numVariations,
+      },
+    });
+
+    // Deduct credits upfront
+    await deductCredits(session.user.id, numVariations, generation.id);
 
     // Generate variations sequentially to avoid rate limits
     const posters: Array<{
@@ -224,6 +265,24 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Refund credits for failed variations
+    const failedCount = numVariations - posters.length;
+    if (failedCount > 0) {
+      await prisma.user.update({
+        where: { id: session.user.id },
+        data: { credits: { increment: failedCount } },
+      });
+      await prisma.creditTransaction.create({
+        data: {
+          userId: session.user.id,
+          amount: failedCount,
+          type: "generation",
+          reference: `refund-${generation.id}`,
+        },
+      });
+      console.log(`[generate] Refunded ${failedCount} credits for failed variations`);
+    }
+
     if (posters.length === 0) {
       return NextResponse.json(
         { error: errors[0] || "All variations failed to generate" },
@@ -231,10 +290,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Get updated credit balance
+    const updatedUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { credits: true },
+    });
+
     return NextResponse.json({
       posters,
       totalRequested: numVariations,
       totalGenerated: posters.length,
+      creditsRemaining: updatedUser?.credits ?? 0,
     });
   } catch (err) {
     const message =

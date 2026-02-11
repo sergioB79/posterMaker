@@ -1,189 +1,11 @@
-"use client";
-
-import { useState, useCallback, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import BriefInput from "@/components/BriefInput";
-import TextFieldsEditor from "@/components/TextFieldsEditor";
-import StyleSelector from "@/components/StyleSelector";
-import InfluenceSelector from "@/components/InfluenceSelector";
-import FormatSelector from "@/components/FormatSelector";
-import ToneSelector from "@/components/ToneSelector";
-import PosterPreview from "@/components/PosterPreview";
-import type { PosterFormState, GeneratedPoster } from "@/lib/types";
-import { buildPrompt, type TextField } from "@/lib/prompt-builder";
+import { CREDIT_PACKS } from "@/lib/credit-packs";
 
-const initialState: PosterFormState = {
-  brief: "",
-  textFields: [],
-  styleId: "auto",
-  influenceIds: [],
-  formatId: "a4-portrait",
-  tones: [],
-  colorMode: "auto",
-  customColors: [],
-};
-
-type SavedConfig = {
-  id: string;
-  savedAt: string;
-  form: PosterFormState;
-  prompt: { system: string; user: string };
-};
-
-const SAVED_CONFIGS_KEY = "posterMaker:saved-configs";
-
-function HomeContent() {
-  const searchParams = useSearchParams();
-  const [form, setForm] = useState<PosterFormState>(initialState);
-  const [posters, setPosters] = useState<GeneratedPoster[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string>();
-  const [variations, setVariations] = useState(4);
-  const [savedConfigs, setSavedConfigs] = useState<SavedConfig[]>([]);
-  const [selectedConfigId, setSelectedConfigId] = useState<string>("");
-  const [saveNotice, setSaveNotice] = useState<string>("");
-
-  const updateForm = useCallback(
-    <K extends keyof PosterFormState>(key: K, value: PosterFormState[K]) => {
-      setForm((prev) => ({ ...prev, [key]: value }));
-    },
-    []
-  );
-
-  const handleGenerate = async () => {
-    if (!form.brief.trim()) {
-      setError("Write a brief first — describe what you want.");
-      return;
-    }
-
-    setIsLoading(true);
-    setError(undefined);
-    setPosters([]);
-
-    try {
-      const res = await fetch("/api/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...form,
-          variations,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.error || "Generation failed. Try again.");
-        return;
-      }
-
-      setPosters(data.posters || []);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Network error. Check your connection."
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSaveConfig = () => {
-    if (!form.brief.trim()) {
-      setError("Write a brief first — describe what you want.");
-      return;
-    }
-
-    const prompt = buildPrompt(form);
-    const entry: SavedConfig = {
-      id: `cfg-${Date.now()}`,
-      savedAt: new Date().toISOString(),
-      form: {
-        brief: form.brief,
-        textFields: form.textFields,
-        styleId: form.styleId,
-        influenceIds: form.influenceIds,
-        formatId: form.formatId,
-        tones: form.tones,
-        colorMode: form.colorMode,
-        customColors: form.customColors,
-      },
-      prompt,
-    };
-
-    const next = [entry, ...savedConfigs].slice(0, 20);
-    setSavedConfigs(next);
-    setSelectedConfigId(entry.id);
-    setSaveNotice("Saved config");
-    try {
-      localStorage.setItem(SAVED_CONFIGS_KEY, JSON.stringify(next));
-    } catch {
-      // ignore storage errors
-    }
-
-    window.setTimeout(() => setSaveNotice(""), 2000);
-  };
-
-  const handleLoadConfig = (id: string) => {
-    const found = savedConfigs.find((c) => c.id === id);
-    if (!found) {
-      return;
-    }
-    setForm(found.form);
-    setPosters([]);
-    setError(undefined);
-  };
-
-  const handleReset = () => {
-    setForm(initialState);
-    setPosters([]);
-    setError(undefined);
-  };
-
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(SAVED_CONFIGS_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as SavedConfig[];
-        if (Array.isArray(parsed)) {
-          setSavedConfigs(parsed);
-        }
-      }
-    } catch {
-      // ignore parse errors
-    }
-
-    const shouldLoad = searchParams.get("load") === "1";
-    if (!shouldLoad) {
-      return;
-    }
-
-    try {
-      const raw = localStorage.getItem("posterMaker:load");
-      if (!raw) {
-        return;
-      }
-      const parsed = JSON.parse(raw);
-      if (parsed?.form) {
-        setForm((prev) => ({
-          ...prev,
-          ...parsed.form,
-        }));
-        setPosters([]);
-        setError(undefined);
-      }
-    } catch {
-      // ignore parse errors
-    } finally {
-      localStorage.removeItem("posterMaker:load");
-    }
-  }, [searchParams]);
-
+export default function LandingPage() {
   return (
     <div className="min-h-screen bg-neutral-950">
-      {/* Header */}
-      <header className="border-b border-neutral-800 bg-neutral-950/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+      <nav className="border-b border-neutral-800/50 bg-neutral-950/80 backdrop-blur-sm sticky top-0 z-50">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
@@ -192,166 +14,135 @@ function HomeContent() {
                 <path d="M9 21V9" />
               </svg>
             </div>
-            <h1 className="text-base font-semibold text-white tracking-tight">
-              Poster Maker
-            </h1>
+            <span className="text-base font-semibold text-white tracking-tight">Poster Maker</span>
           </div>
-          <Link
-            href="/gallery"
-            className="text-xs text-neutral-400 hover:text-orange-300 transition-colors"
-          >
-            Gallery
+          <div className="flex items-center gap-4">
+            <Link href="/pricing" className="text-sm text-neutral-400 hover:text-white transition-colors">Pricing</Link>
+            <Link href="/gallery" className="text-sm text-neutral-400 hover:text-white transition-colors">Gallery</Link>
+            <Link href="/auth/signin" className="text-sm text-neutral-300 hover:text-white transition-colors">Sign in</Link>
+            <Link href="/auth/signin" className="rounded-lg bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-medium px-4 py-2 text-sm transition-all">
+              Get Started Free
+            </Link>
+          </div>
+        </div>
+      </nav>
+
+      {/* Hero */}
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 pt-20 pb-16 text-center">
+        <div className="inline-flex items-center gap-2 rounded-full bg-orange-500/10 border border-orange-500/20 px-3 py-1 text-xs text-orange-300 mb-6">
+          <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
+          Powered by AI
+        </div>
+        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight tracking-tight max-w-3xl mx-auto">
+          Design stunning posters
+          <br />
+          <span className="bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent">
+            in seconds, not hours
+          </span>
+        </h1>
+        <p className="text-lg text-neutral-400 mt-6 max-w-xl mx-auto leading-relaxed">
+          Describe your vision, choose artistic influences from legendary designers,
+          and let AI generate professional poster designs instantly.
+        </p>
+        <div className="flex items-center justify-center gap-4 mt-8">
+          <Link href="/auth/signin" className="rounded-xl bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-semibold px-8 py-3.5 text-sm transition-all shadow-lg shadow-orange-500/20">
+            Start Creating — 2 Free Credits
+          </Link>
+          <Link href="#how-it-works" className="rounded-xl border border-neutral-700 hover:border-neutral-600 text-neutral-300 font-medium px-8 py-3.5 text-sm transition-colors">
+            How it works
           </Link>
         </div>
-      </header>
+      </section>
 
-      {/* Main content — two columns */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-[420px_1fr] gap-6">
-          {/* Left column — Inputs */}
-          <div className="space-y-5">
-            <BriefInput
-              value={form.brief}
-              onChange={(v) => updateForm("brief", v)}
-            />
-
-            <TextFieldsEditor
-              fields={form.textFields}
-              onChange={(v: TextField[]) => updateForm("textFields", v)}
-            />
-
-            <StyleSelector
-              value={form.styleId}
-              onChange={(v) => updateForm("styleId", v)}
-            />
-
-            <InfluenceSelector
-              selected={form.influenceIds}
-              onChange={(v) => updateForm("influenceIds", v)}
-            />
-
-            <FormatSelector
-              value={form.formatId}
-              onChange={(v) => updateForm("formatId", v)}
-            />
-
-            <ToneSelector
-              selected={form.tones}
-              onChange={(v) => updateForm("tones", v)}
-            />
-
-            {/* Variations count */}
-            <div>
-              <label className="block text-sm font-medium text-neutral-300 mb-1.5">
-                Variations
-              </label>
-              <div className="flex gap-1.5">
-                {[1, 2, 3, 4, 6].map((n) => (
-                  <button
-                    key={n}
-                    type="button"
-                    onClick={() => setVariations(n)}
-                    className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${
-                      variations === n
-                        ? "bg-orange-500/15 border border-orange-500/40 text-orange-300"
-                        : "bg-neutral-800 border border-neutral-700 text-neutral-400 hover:border-neutral-600"
-                    }`}
-                  >
-                    {n}
-                  </button>
-                ))}
-              </div>
+      {/* Features */}
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 py-16">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[
+            {
+              icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 2L2 7l10 5 10-5-10-5z" /><path d="M2 17l10 5 10-5" /><path d="M2 12l10 5 10-5" /></svg>,
+              title: "25+ Artist Influences",
+              desc: "Choose from Saul Bass, Paula Scher, Muller-Brockmann, and more. Each influence brings authentic visual DNA to your design.",
+            },
+            {
+              icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></svg>,
+              title: "12 Styles & Formats",
+              desc: "Swiss, Brutalist, Retro, Art Deco, and more. Export in A4, A3, Instagram, or custom formats.",
+            },
+            {
+              icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>,
+              title: "Perfect Text Rendering",
+              desc: "Advanced AI model trained for typography. Your poster text appears exactly as specified — letter-perfect.",
+            },
+          ].map((f, i) => (
+            <div key={i} className="rounded-2xl bg-neutral-900 border border-neutral-800 p-6 hover:border-neutral-700 transition-colors">
+              <div className="w-10 h-10 rounded-xl bg-orange-500/10 text-orange-400 flex items-center justify-center mb-4">{f.icon}</div>
+              <h3 className="text-white font-semibold mb-2">{f.title}</h3>
+              <p className="text-sm text-neutral-400 leading-relaxed">{f.desc}</p>
             </div>
-
-            {/* Generate button */}
-            <div className="space-y-2">
-              <button
-                type="button"
-                onClick={handleGenerate}
-                disabled={isLoading || !form.brief.trim()}
-                className="w-full rounded-xl bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 disabled:from-neutral-700 disabled:to-neutral-700 disabled:cursor-not-allowed text-white font-semibold py-3.5 text-sm transition-all shadow-lg shadow-orange-500/20 disabled:shadow-none"
-              >
-                {isLoading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" className="opacity-25" />
-                      <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" className="opacity-75" />
-                    </svg>
-                    Generating...
-                  </span>
-                ) : (
-                  "Generate Poster"
-                )}
-              </button>
-
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={handleSaveConfig}
-                  className="flex-1 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-xs font-medium py-2.5 transition-colors border border-neutral-700"
-                >
-                  Save Config
-                </button>
-                <select
-                  value={selectedConfigId}
-                  onChange={(e) => {
-                    const id = e.target.value;
-                    setSelectedConfigId(id);
-                    handleLoadConfig(id);
-                  }}
-                  className="flex-1 rounded-lg bg-neutral-800 text-neutral-300 text-xs font-medium py-2.5 px-3 border border-neutral-700 focus:outline-none"
-                >
-                  <option value="">Load saved…</option>
-                  {savedConfigs.map((cfg) => (
-                    <option key={cfg.id} value={cfg.id}>
-                      {cfg.form.brief?.slice(0, 28) || "Untitled"} •{" "}
-                      {new Date(cfg.savedAt).toLocaleDateString()}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              {saveNotice && (
-                <div className="text-[11px] text-green-400">{saveNotice}</div>
-              )}
-            </div>
-
-            {/* Reset */}
-            <button
-              type="button"
-              onClick={handleReset}
-              className="w-full text-xs text-neutral-500 hover:text-neutral-300 transition-colors py-2"
-            >
-              Reset all fields
-            </button>
-          </div>
-
-          {/* Right column — Preview */}
-          <div className="lg:sticky lg:top-20 lg:self-start rounded-2xl bg-neutral-900 border border-neutral-800 overflow-hidden min-h-[500px]">
-            <PosterPreview
-              posters={posters}
-              isLoading={isLoading}
-              error={error}
-              formState={form}
-            />
-          </div>
+          ))}
         </div>
-      </main>
+      </section>
 
-      {/* Footer */}
-      <footer className="border-t border-neutral-800 mt-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between text-xs text-neutral-600">
+      {/* How it works */}
+      <section id="how-it-works" className="max-w-6xl mx-auto px-4 sm:px-6 py-16">
+        <h2 className="text-2xl font-bold text-white text-center mb-12">How it works</h2>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          {[
+            { step: "01", title: "Describe", desc: "Write a brief describing your poster concept and add text fields with priority levels." },
+            { step: "02", title: "Style it", desc: "Choose a visual style, artistic influences, format, and design tone." },
+            { step: "03", title: "Generate", desc: "AI creates multiple poster variations based on your specifications." },
+            { step: "04", title: "Download", desc: "Pick your favorite, download in high resolution, ready to print or share." },
+          ].map((s, i) => (
+            <div key={i} className="text-center">
+              <div className="text-3xl font-bold bg-gradient-to-b from-orange-400 to-orange-600 bg-clip-text text-transparent mb-3">{s.step}</div>
+              <h3 className="text-white font-semibold mb-1">{s.title}</h3>
+              <p className="text-sm text-neutral-500">{s.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Pricing */}
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 py-16">
+        <h2 className="text-2xl font-bold text-white text-center mb-3">Simple pricing</h2>
+        <p className="text-neutral-400 text-center mb-10">Start free. Pay only when you need more.</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mx-auto">
+          {CREDIT_PACKS.map((pack) => (
+            <div key={pack.id} className={`rounded-2xl border p-6 text-center ${pack.popular ? "bg-orange-500/5 border-orange-500/30" : "bg-neutral-900 border-neutral-800"}`}>
+              {pack.popular && <span className="inline-block text-[10px] font-semibold uppercase tracking-wider text-orange-400 bg-orange-500/10 rounded-full px-2 py-0.5 mb-3">Popular</span>}
+              <h3 className="text-white font-semibold">{pack.name}</h3>
+              <div className="mt-2"><span className="text-3xl font-bold text-white">&euro;{pack.priceDisplay}</span></div>
+              <p className="text-sm text-neutral-400 mt-1">{pack.credits} credits</p>
+              <p className="text-xs text-neutral-500 mt-0.5">&euro;{pack.perImage} per poster</p>
+              <Link href="/auth/signin" className={`block mt-4 rounded-xl py-2.5 text-sm font-medium transition-colors ${pack.popular ? "bg-gradient-to-r from-orange-500 to-red-600 text-white" : "bg-neutral-800 border border-neutral-700 text-neutral-300 hover:border-neutral-600"}`}>
+                Get Started
+              </Link>
+            </div>
+          ))}
+        </div>
+        <p className="text-center text-xs text-neutral-600 mt-6">1 credit = 1 poster image. Free tier includes 2 credits on signup.</p>
+      </section>
+
+      {/* CTA */}
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 py-16">
+        <div className="rounded-2xl bg-gradient-to-r from-orange-500/10 to-red-600/10 border border-orange-500/20 p-12 text-center">
+          <h2 className="text-2xl font-bold text-white mb-3">Ready to create?</h2>
+          <p className="text-neutral-400 mb-6">Sign up and get 2 free poster credits. No credit card required.</p>
+          <Link href="/auth/signin" className="inline-block rounded-xl bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-semibold px-8 py-3.5 text-sm transition-all shadow-lg shadow-orange-500/20">
+            Start Creating Free
+          </Link>
+        </div>
+      </section>
+
+      <footer className="border-t border-neutral-800 mt-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 flex items-center justify-between text-xs text-neutral-600">
           <span>Poster Maker</span>
-          <span>AI-powered poster design tool</span>
+          <div className="flex items-center gap-4">
+            <Link href="/pricing" className="hover:text-neutral-400 transition-colors">Pricing</Link>
+            <Link href="/auth/signin" className="hover:text-neutral-400 transition-colors">Sign in</Link>
+          </div>
         </div>
       </footer>
     </div>
-  );
-}
-
-export default function Home() {
-  return (
-    <Suspense fallback={null}>
-      <HomeContent />
-    </Suspense>
   );
 }
