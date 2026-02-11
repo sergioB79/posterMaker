@@ -11,7 +11,7 @@ import FormatSelector from "@/components/FormatSelector";
 import ToneSelector from "@/components/ToneSelector";
 import PosterPreview from "@/components/PosterPreview";
 import type { PosterFormState, GeneratedPoster } from "@/lib/types";
-import type { TextField } from "@/lib/prompt-builder";
+import { buildPrompt, type TextField } from "@/lib/prompt-builder";
 
 const initialState: PosterFormState = {
   brief: "",
@@ -24,6 +24,15 @@ const initialState: PosterFormState = {
   customColors: [],
 };
 
+type SavedConfig = {
+  id: string;
+  savedAt: string;
+  form: PosterFormState;
+  prompt: { system: string; user: string };
+};
+
+const SAVED_CONFIGS_KEY = "posterMaker:saved-configs";
+
 function HomeContent() {
   const searchParams = useSearchParams();
   const [form, setForm] = useState<PosterFormState>(initialState);
@@ -31,6 +40,9 @@ function HomeContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>();
   const [variations, setVariations] = useState(4);
+  const [savedConfigs, setSavedConfigs] = useState<SavedConfig[]>([]);
+  const [selectedConfigId, setSelectedConfigId] = useState<string>("");
+  const [saveNotice, setSaveNotice] = useState<string>("");
 
   const updateForm = useCallback(
     <K extends keyof PosterFormState>(key: K, value: PosterFormState[K]) => {
@@ -76,6 +88,52 @@ function HomeContent() {
     }
   };
 
+  const handleSaveConfig = () => {
+    if (!form.brief.trim()) {
+      setError("Write a brief first — describe what you want.");
+      return;
+    }
+
+    const prompt = buildPrompt(form);
+    const entry: SavedConfig = {
+      id: `cfg-${Date.now()}`,
+      savedAt: new Date().toISOString(),
+      form: {
+        brief: form.brief,
+        textFields: form.textFields,
+        styleId: form.styleId,
+        influenceIds: form.influenceIds,
+        formatId: form.formatId,
+        tones: form.tones,
+        colorMode: form.colorMode,
+        customColors: form.customColors,
+      },
+      prompt,
+    };
+
+    const next = [entry, ...savedConfigs].slice(0, 20);
+    setSavedConfigs(next);
+    setSelectedConfigId(entry.id);
+    setSaveNotice("Saved config");
+    try {
+      localStorage.setItem(SAVED_CONFIGS_KEY, JSON.stringify(next));
+    } catch {
+      // ignore storage errors
+    }
+
+    window.setTimeout(() => setSaveNotice(""), 2000);
+  };
+
+  const handleLoadConfig = (id: string) => {
+    const found = savedConfigs.find((c) => c.id === id);
+    if (!found) {
+      return;
+    }
+    setForm(found.form);
+    setPosters([]);
+    setError(undefined);
+  };
+
   const handleReset = () => {
     setForm(initialState);
     setPosters([]);
@@ -83,6 +141,18 @@ function HomeContent() {
   };
 
   useEffect(() => {
+    try {
+      const raw = localStorage.getItem(SAVED_CONFIGS_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as SavedConfig[];
+        if (Array.isArray(parsed)) {
+          setSavedConfigs(parsed);
+        }
+      }
+    } catch {
+      // ignore parse errors
+    }
+
     const shouldLoad = searchParams.get("load") === "1";
     if (!shouldLoad) {
       return;
@@ -194,24 +264,56 @@ function HomeContent() {
             </div>
 
             {/* Generate button */}
-            <button
-              type="button"
-              onClick={handleGenerate}
-              disabled={isLoading || !form.brief.trim()}
-              className="w-full rounded-xl bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 disabled:from-neutral-700 disabled:to-neutral-700 disabled:cursor-not-allowed text-white font-semibold py-3.5 text-sm transition-all shadow-lg shadow-orange-500/20 disabled:shadow-none"
-            >
-              {isLoading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" className="opacity-25" />
-                    <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" className="opacity-75" />
-                  </svg>
-                  Generating...
-                </span>
-              ) : (
-                "Generate Poster"
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={handleGenerate}
+                disabled={isLoading || !form.brief.trim()}
+                className="w-full rounded-xl bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 disabled:from-neutral-700 disabled:to-neutral-700 disabled:cursor-not-allowed text-white font-semibold py-3.5 text-sm transition-all shadow-lg shadow-orange-500/20 disabled:shadow-none"
+              >
+                {isLoading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" className="opacity-25" />
+                      <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" className="opacity-75" />
+                    </svg>
+                    Generating...
+                  </span>
+                ) : (
+                  "Generate Poster"
+                )}
+              </button>
+
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleSaveConfig}
+                  className="flex-1 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-xs font-medium py-2.5 transition-colors border border-neutral-700"
+                >
+                  Save Config
+                </button>
+                <select
+                  value={selectedConfigId}
+                  onChange={(e) => {
+                    const id = e.target.value;
+                    setSelectedConfigId(id);
+                    handleLoadConfig(id);
+                  }}
+                  className="flex-1 rounded-lg bg-neutral-800 text-neutral-300 text-xs font-medium py-2.5 px-3 border border-neutral-700 focus:outline-none"
+                >
+                  <option value="">Load saved…</option>
+                  {savedConfigs.map((cfg) => (
+                    <option key={cfg.id} value={cfg.id}>
+                      {cfg.form.brief?.slice(0, 28) || "Untitled"} •{" "}
+                      {new Date(cfg.savedAt).toLocaleDateString()}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {saveNotice && (
+                <div className="text-[11px] text-green-400">{saveNotice}</div>
               )}
-            </button>
+            </div>
 
             {/* Reset */}
             <button
