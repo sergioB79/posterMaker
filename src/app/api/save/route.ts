@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
+import { put } from "@vercel/blob";
 
 // Allow large body for base64 images
 export const runtime = "nodejs";
@@ -19,35 +18,44 @@ export async function POST(req: NextRequest) {
     const now = new Date();
     const dateStr = now.toISOString().split("T")[0];
     const timeStr = now.toTimeString().split(" ")[0].replace(/:/g, "-");
-    const folderPath = path.join(process.cwd(), "created", dateStr);
-
-    await mkdir(folderPath, { recursive: true });
 
     // Generate filename
     const id = `poster-${dateStr}-${timeStr}-${Math.random().toString(36).slice(2, 6)}`;
     const imageFilename = `${id}.png`;
     const metaFilename = `${id}.json`;
 
-    // Save image
+    // Save image to Blob storage
     let imageBuffer: Buffer;
+    let contentType = "image/png";
     if (imageData.startsWith("data:image")) {
       // base64 data URL
-      const base64 = imageData.split(",")[1];
-      imageBuffer = Buffer.from(base64, "base64");
+      const [header, base64] = imageData.split(",");
+      const match = header?.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64$/);
+      if (match?.[1]) {
+        contentType = match[1];
+      }
+      imageBuffer = Buffer.from(base64 || "", "base64");
     } else {
       // Fetch from URL
       const res = await fetch(imageData);
       const arrayBuf = await res.arrayBuffer();
+      contentType = res.headers.get("content-type") || contentType;
       imageBuffer = Buffer.from(arrayBuf);
     }
 
-    await writeFile(path.join(folderPath, imageFilename), imageBuffer);
+    const imagePathname = `created/${dateStr}/${imageFilename}`;
+    const imageBlob = await put(imagePathname, imageBuffer, {
+      access: "public",
+      contentType,
+      addRandomSuffix: false,
+    });
 
     // Save metadata + prompt
     const meta = {
       id,
       filename: imageFilename,
       prompt: prompt || "",
+      imageUrl: imageBlob.url,
       brief: metadata?.brief || "",
       textFields: metadata?.textFields || [],
       styleId: metadata?.styleId || "",
@@ -60,16 +68,17 @@ export async function POST(req: NextRequest) {
       folder: dateStr,
     };
 
-    await writeFile(
-      path.join(folderPath, metaFilename),
-      JSON.stringify(meta, null, 2)
-    );
+    const metaPathname = `created/${dateStr}/${metaFilename}`;
+    await put(metaPathname, JSON.stringify(meta, null, 2), {
+      access: "public",
+      contentType: "application/json",
+      addRandomSuffix: false,
+    });
 
     return NextResponse.json({
       saved: true,
       id,
-      path: `/created/${dateStr}/${imageFilename}`,
-      metaPath: `/created/${dateStr}/${metaFilename}`,
+      path: imageBlob.url,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Save failed";

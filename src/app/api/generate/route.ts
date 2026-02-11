@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
 import { buildVariationPrompt, type PosterRequest } from "@/lib/prompt-builder";
+import { put } from "@vercel/blob";
 
 // Uses gpt-image-1 — much better at rendering text on posters than DALL-E 3.
 // Set your API key env var in .env.local: PosterMaker_OPENAI_API_KEY
+
+export const runtime = "nodejs";
 
 async function generateImage(
   system: string,
@@ -88,29 +89,37 @@ async function savePosterToDisk(params: {
   const now = new Date();
   const dateStr = now.toISOString().split("T")[0];
   const timeStr = now.toTimeString().split(" ")[0].replace(/:/g, "-");
-  const folderPath = path.join(process.cwd(), "created", dateStr);
-
-  await mkdir(folderPath, { recursive: true });
-
   const id = `poster-${dateStr}-${timeStr}-${Math.random().toString(36).slice(2, 6)}`;
   const imageFilename = `${id}.png`;
   const metaFilename = `${id}.json`;
 
   let imageBuffer: Buffer;
+  let contentType = "image/png";
   if (params.imageData.startsWith("data:image")) {
-    const base64 = params.imageData.split(",")[1] || "";
-    imageBuffer = Buffer.from(base64, "base64");
+    const [header, base64] = params.imageData.split(",");
+    const match = header?.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64$/);
+    if (match?.[1]) {
+      contentType = match[1];
+    }
+    imageBuffer = Buffer.from(base64 || "", "base64");
   } else {
     const res = await fetch(params.imageData);
     const arrayBuf = await res.arrayBuffer();
+    contentType = res.headers.get("content-type") || contentType;
     imageBuffer = Buffer.from(arrayBuf);
   }
 
-  await writeFile(path.join(folderPath, imageFilename), imageBuffer);
+  const imagePathname = `created/${dateStr}/${imageFilename}`;
+  const imageBlob = await put(imagePathname, imageBuffer, {
+    access: "public",
+    contentType,
+    addRandomSuffix: false,
+  });
 
   const meta = {
     id,
     filename: imageFilename,
+    imageUrl: imageBlob.url,
     prompt: params.prompt || "",
     brief: params.brief || "",
     textFields: params.textFields || [],
@@ -124,12 +133,14 @@ async function savePosterToDisk(params: {
     folder: dateStr,
   };
 
-  await writeFile(
-    path.join(folderPath, metaFilename),
-    JSON.stringify(meta, null, 2)
-  );
+  const metaPathname = `created/${dateStr}/${metaFilename}`;
+  await put(metaPathname, JSON.stringify(meta, null, 2), {
+    access: "public",
+    contentType: "application/json",
+    addRandomSuffix: false,
+  });
 
-  return { id };
+  return { id, imageUrl: imageBlob.url };
 }
 
 export async function POST(req: NextRequest) {
@@ -202,7 +213,7 @@ export async function POST(req: NextRequest) {
         });
         posters.push({
           id: saved.id,
-          imageUrl,
+          imageUrl: saved.imageUrl,
           prompt: user.slice(0, 500),
           variationIndex: i,
         });

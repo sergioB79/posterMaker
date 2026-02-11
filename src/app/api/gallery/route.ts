@@ -1,27 +1,13 @@
 import { NextResponse } from "next/server";
-import { readdir, readFile, stat } from "fs/promises";
-import path from "path";
+import { list } from "@vercel/blob";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET() {
   try {
-    const createdDir = path.join(process.cwd(), "created");
-
-    // Check if created folder exists
-    try {
-      await stat(createdDir);
-    } catch {
-      return NextResponse.json({ posters: [], folders: [] });
-    }
-
-    // Read date folders
-    const entries = await readdir(createdDir, { withFileTypes: true });
-    const dateFolders = entries
-      .filter((e) => e.isDirectory())
-      .map((e) => e.name)
-      .sort()
-      .reverse(); // newest first
+    const { blobs } = await list({ prefix: "created/", limit: 1000 });
+    const metaBlobs = blobs.filter((b) => b.pathname.endsWith(".json"));
 
     const allPosters: Array<{
       id: string;
@@ -37,22 +23,20 @@ export async function GET() {
       imagePath: string;
     }> = [];
 
-    for (const folder of dateFolders) {
-      const folderPath = path.join(createdDir, folder);
-      const files = await readdir(folderPath);
-      const jsonFiles = files.filter((f) => f.endsWith(".json"));
-
-      for (const jsonFile of jsonFiles) {
-        try {
-          const raw = await readFile(path.join(folderPath, jsonFile), "utf-8");
-          const meta = JSON.parse(raw);
-          allPosters.push({
-            ...meta,
-            imagePath: `/api/images?path=created/${folder}/${meta.filename}`,
-          });
-        } catch {
-          // Skip corrupted metadata
+    const dateFolders = new Set<string>();
+    for (const blob of metaBlobs) {
+      try {
+        const res = await fetch(blob.url);
+        const meta = await res.json();
+        if (meta?.folder) {
+          dateFolders.add(meta.folder);
         }
+        allPosters.push({
+          ...meta,
+          imagePath: meta.imageUrl || meta.imagePath || "",
+        });
+      } catch {
+        // Skip corrupted metadata
       }
     }
 
@@ -64,7 +48,7 @@ export async function GET() {
 
     return NextResponse.json({
       posters: allPosters,
-      folders: dateFolders,
+      folders: Array.from(dateFolders).sort().reverse(),
       total: allPosters.length,
     });
   } catch (err) {
