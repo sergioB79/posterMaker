@@ -1,55 +1,65 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
+import { getServerSession } from "next-auth";
+import { getAuthOptions } from "@/lib/auth";
 import { list } from "@vercel/blob";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const { blobs } = await list({ prefix: "created/", limit: 1000 });
-    const metaBlobs = blobs.filter((b) => b.pathname.endsWith(".json"));
-
-    const allPosters: Array<{
-      id: string;
-      filename: string;
-      prompt: string;
-      brief: string;
-      styleId: string;
-      influenceIds: string[];
-      tones: string[];
-      formatId: string;
-      createdAt: string;
-      folder: string;
-      imagePath: string;
-    }> = [];
-
-    const dateFolders = new Set<string>();
-    for (const blob of metaBlobs) {
-      try {
-        const res = await fetch(blob.url);
-        const meta = await res.json();
-        if (meta?.folder) {
-          dateFolders.add(meta.folder);
-        }
-        allPosters.push({
-          ...meta,
-          imagePath: meta.imageUrl || meta.imagePath || "",
-        });
-      } catch {
-        // Skip corrupted metadata
-      }
+    const session = await getServerSession(getAuthOptions());
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Sort by createdAt descending
-    allPosters.sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    const url = new URL(req.url);
+    const page = Math.max(1, parseInt(url.searchParams.get("page") || "1"));
+    const limit = Math.min(50, Math.max(1, parseInt(url.searchParams.get("limit") || "24")));
+
+    // List only this user's blobs
+    const userPrefix = `created/${session.user.id}/`;
+    const { blobs } = await list({ prefix: userPrefix, limit: 1000 });
+    const metaBlobs = blobs.filter((b) => b.pathname.endsWith(".json"));
+
+    // Sort by blob uploadedAt descending (avoids fetching all JSON just to sort)
+    metaBlobs.sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
+
+    // Paginate
+    const total = metaBlobs.length;
+    const totalPages = Math.ceil(total / limit);
+    const pagedBlobs = metaBlobs.slice((page - 1) * limit, page * limit);
+
+    // Fetch metadata in parallel for current page only
+    const results = await Promise.allSettled(
+      pagedBlobs.map(async (blob) => {
+        const res = await fetch(blob.url);
+        return res.json();
+      })
     );
 
+    const posters = results
+      .filter((r): r is PromiseFulfilledResult<Record<string, unknown>> => r.status === "fulfilled")
+      .map((r) => {
+        const meta = r.value;
+        return {
+          ...meta,
+          imagePath: meta.imageUrl || meta.imagePath || "",
+        };
+      });
+
+    // Extract folders from current results
+    const dateFolders = new Set<string>();
+    for (const p of posters) {
+      if (p.folder) dateFolders.add(p.folder as string);
+    }
+
     return NextResponse.json({
-      posters: allPosters,
+      posters,
       folders: Array.from(dateFolders).sort().reverse(),
-      total: allPosters.length,
+      total,
+      page,
+      totalPages,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Gallery read failed";

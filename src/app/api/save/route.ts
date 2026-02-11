@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { getAuthOptions } from "@/lib/auth";
 import { put } from "@vercel/blob";
 
 // Allow large body for base64 images
@@ -7,6 +9,11 @@ export const maxDuration = 30;
 
 export async function POST(req: NextRequest) {
   try {
+    const session = await getServerSession(getAuthOptions());
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await req.json();
     const { imageData, prompt, metadata } = body;
 
@@ -14,7 +21,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No image data" }, { status: 400 });
     }
 
-    // Create date-based folder: created/YYYY-MM-DD
+    // Create date-based folder: created/{userId}/YYYY-MM-DD
     const now = new Date();
     const dateStr = now.toISOString().split("T")[0];
     const timeStr = now.toTimeString().split(" ")[0].replace(/:/g, "-");
@@ -43,7 +50,7 @@ export async function POST(req: NextRequest) {
       imageBuffer = Buffer.from(arrayBuf);
     }
 
-    const imagePathname = `created/${dateStr}/${imageFilename}`;
+    const imagePathname = `created/${session.user.id}/${dateStr}/${imageFilename}`;
     const imageBlob = await put(imagePathname, imageBuffer, {
       access: "public",
       contentType,
@@ -68,7 +75,7 @@ export async function POST(req: NextRequest) {
       folder: dateStr,
     };
 
-    const metaPathname = `created/${dateStr}/${metaFilename}`;
+    const metaPathname = `created/${session.user.id}/${dateStr}/${metaFilename}`;
     await put(metaPathname, JSON.stringify(meta, null, 2), {
       access: "public",
       contentType: "application/json",

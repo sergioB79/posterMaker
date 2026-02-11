@@ -79,6 +79,7 @@ async function generateImage(
 }
 
 async function savePosterToDisk(params: {
+  userId: string;
   imageData: string;
   prompt: string;
   brief: string;
@@ -113,7 +114,7 @@ async function savePosterToDisk(params: {
     imageBuffer = Buffer.from(arrayBuf);
   }
 
-  const imagePathname = `created/${dateStr}/${imageFilename}`;
+  const imagePathname = `created/${params.userId}/${dateStr}/${imageFilename}`;
   const imageBlob = await put(imagePathname, imageBuffer, {
     access: "public",
     contentType,
@@ -137,7 +138,7 @@ async function savePosterToDisk(params: {
     folder: dateStr,
   };
 
-  const metaPathname = `created/${dateStr}/${metaFilename}`;
+  const metaPathname = `created/${params.userId}/${dateStr}/${metaFilename}`;
   await put(metaPathname, JSON.stringify(meta, null, 2), {
     access: "public",
     contentType: "application/json",
@@ -241,6 +242,7 @@ export async function POST(req: NextRequest) {
       try {
         const imageUrl = await generateImage(system, user, width, height);
         const saved = await savePosterToDisk({
+          userId: session.user.id,
           imageData: imageUrl,
           prompt: user,
           brief: request.brief,
