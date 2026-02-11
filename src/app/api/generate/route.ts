@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getAuthOptions } from "@/lib/auth";
 import { checkCredits, deductCredits } from "@/lib/credits";
 import { prisma } from "@/lib/prisma";
 import { buildVariationPrompt, type PosterRequest } from "@/lib/prompt-builder";
@@ -150,7 +150,7 @@ async function savePosterToDisk(params: {
 export async function POST(req: NextRequest) {
   try {
     // Auth check
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(getAuthOptions());
     if (!session?.user?.id) {
       return NextResponse.json(
         { error: "Sign in to generate posters" },
