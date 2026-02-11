@@ -265,27 +265,15 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Refund credits for failed variations
+    // No refunds for failed variations — credits are consumed on generation attempt
     const failedCount = numVariations - posters.length;
     if (failedCount > 0) {
-      await prisma.user.update({
-        where: { id: session.user.id },
-        data: { credits: { increment: failedCount } },
-      });
-      await prisma.creditTransaction.create({
-        data: {
-          userId: session.user.id,
-          amount: failedCount,
-          type: "generation",
-          reference: `refund-${generation.id}`,
-        },
-      });
-      console.log(`[generate] Refunded ${failedCount} credits for failed variations`);
+      console.log(`[generate] ${failedCount} variation(s) failed — no refund`);
     }
 
     if (posters.length === 0) {
       return NextResponse.json(
-        { error: errors[0] || "All variations failed to generate" },
+        { error: errors[0] || "All variations failed to generate. Credits have been consumed." },
         { status: 500 }
       );
     }

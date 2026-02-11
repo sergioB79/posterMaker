@@ -8,10 +8,11 @@ export default function SignInPage() {
   const [email, setEmail] = useState("");
   const [emailSent, setEmailSent] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [agreed, setAgreed] = useState(false);
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) return;
+    if (!email.trim() || !agreed) return;
     setLoading(true);
     await signIn("email", { email, redirect: false });
     setEmailSent(true);
@@ -34,9 +35,30 @@ export default function SignInPage() {
         </div>
 
         <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 space-y-4">
+          {/* Terms consent checkbox */}
+          <label className="flex items-start gap-3 cursor-pointer group">
+            <input
+              type="checkbox"
+              checked={agreed}
+              onChange={(e) => setAgreed(e.target.checked)}
+              className="mt-0.5 w-4 h-4 rounded border-neutral-600 bg-neutral-800 text-orange-500 focus:ring-orange-500/50 focus:ring-offset-0 cursor-pointer"
+            />
+            <span className="text-xs text-neutral-400 leading-relaxed">
+              I agree to the{" "}
+              <Link href="/terms" className="text-orange-400 hover:text-orange-300 underline">
+                Terms of Service
+              </Link>{" "}
+              and{" "}
+              <Link href="/privacy" className="text-orange-400 hover:text-orange-300 underline">
+                Privacy Policy
+              </Link>
+            </span>
+          </label>
+
           <button
-            onClick={() => signIn("google", { callbackUrl: "/create" })}
-            className="w-full flex items-center justify-center gap-3 rounded-xl bg-white hover:bg-neutral-100 text-neutral-900 font-medium py-3 text-sm transition-colors"
+            onClick={() => agreed && signIn("google", { callbackUrl: "/create" })}
+            disabled={!agreed}
+            className="w-full flex items-center justify-center gap-3 rounded-xl bg-white hover:bg-neutral-100 disabled:opacity-40 disabled:cursor-not-allowed text-neutral-900 font-medium py-3 text-sm transition-colors"
           >
             <svg width="18" height="18" viewBox="0 0 24 24">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
@@ -72,18 +94,14 @@ export default function SignInPage() {
               />
               <button
                 type="submit"
-                disabled={loading || !email.trim()}
-                className="w-full rounded-xl bg-neutral-800 hover:bg-neutral-700 disabled:opacity-50 border border-neutral-700 text-white font-medium py-3 text-sm transition-colors"
+                disabled={loading || !email.trim() || !agreed}
+                className="w-full rounded-xl bg-neutral-800 hover:bg-neutral-700 disabled:opacity-40 disabled:cursor-not-allowed border border-neutral-700 text-white font-medium py-3 text-sm transition-colors"
               >
                 {loading ? "Sending..." : "Sign in with Email"}
               </button>
             </form>
           )}
         </div>
-
-        <p className="text-center text-xs text-neutral-600 mt-6">
-          By signing in you agree to our terms of service.
-        </p>
 
         <div className="text-center mt-4">
           <Link href="/" className="text-xs text-neutral-500 hover:text-orange-300 transition-colors">
