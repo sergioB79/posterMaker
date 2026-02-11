@@ -6,6 +6,7 @@ export interface TextField {
   label: string;
   content: string;
   priority: "H1" | "H2" | "body" | "small";
+  color?: string;
 }
 
 export interface PosterRequest {
@@ -51,7 +52,10 @@ function buildTextFieldsBlock(fields: TextField[]): string {
   if (fields.length === 0) return "No specific text provided — generate appropriate placeholder text.";
 
   return fields
-    .map((f) => `- [${f.priority}] ${f.label}: "${f.content}"`)
+    .map((f) => {
+      const color = f.color && f.color !== "random" ? f.color : "random";
+      return `- [${f.priority}] ${f.label}: "${f.content}" (color: ${color})`;
+    })
     .join("\n");
 }
 

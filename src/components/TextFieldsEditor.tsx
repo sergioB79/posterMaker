@@ -28,6 +28,7 @@ export default function TextFieldsEditor({
         label: "",
         content: "",
         priority: "body",
+        color: "random",
       },
     ]);
   };
@@ -58,11 +59,17 @@ export default function TextFieldsEditor({
       </div>
 
       <div className="space-y-3">
-        {fields.map((field, idx) => (
-          <div
-            key={field.id}
-            className="rounded-lg bg-neutral-800/50 border border-neutral-700/50 p-3 space-y-2"
-          >
+        {fields.map((field, idx) => {
+          const colorMode =
+            field.color && field.color !== "random" ? "custom" : "random";
+          const colorValue =
+            field.color && field.color !== "random" ? field.color : "#ffffff";
+
+          return (
+            <div
+              key={field.id}
+              className="rounded-lg bg-neutral-800/50 border border-neutral-700/50 p-3 space-y-2"
+            >
             <div className="flex items-center gap-2">
               <input
                 type="text"
@@ -96,6 +103,33 @@ export default function TextFieldsEditor({
                   </option>
                 ))}
               </select>
+              <select
+                value={colorMode}
+                onChange={(e) => {
+                  const nextMode = e.target.value;
+                  updateField(field.id, {
+                    color:
+                      nextMode === "custom"
+                        ? colorValue
+                        : "random",
+                  });
+                }}
+                className="rounded bg-neutral-800 border border-neutral-700 px-2 py-1.5 text-xs text-neutral-300 focus:outline-none focus:ring-1 focus:ring-orange-500/50"
+                title="Color"
+              >
+                <option value="random">Color: Random</option>
+                <option value="custom">Color: Pick</option>
+              </select>
+              <input
+                type="color"
+                value={colorValue}
+                onChange={(e) =>
+                  updateField(field.id, { color: e.target.value })
+                }
+                disabled={colorMode === "random"}
+                className="h-7 w-9 rounded border border-neutral-700 bg-neutral-800 p-0.5 disabled:opacity-50"
+                title="Pick color"
+              />
               <button
                 type="button"
                 onClick={() => removeField(field.id)}
@@ -124,8 +158,9 @@ export default function TextFieldsEditor({
               placeholder="Text content..."
               className="w-full rounded bg-neutral-800 border border-neutral-700 px-2.5 py-1.5 text-sm text-white placeholder-neutral-500 focus:outline-none focus:ring-1 focus:ring-orange-500/50"
             />
-          </div>
-        ))}
+            </div>
+          );
+        })}
 
         {fields.length === 0 && (
           <button
@@ -138,24 +173,28 @@ export default function TextFieldsEditor({
                   label: "Title",
                   content: "",
                   priority: "H1",
+                  color: "random",
                 },
                 {
                   id: crypto.randomUUID(),
                   label: "Subtitle",
                   content: "",
                   priority: "H2",
+                  color: "random",
                 },
                 {
                   id: crypto.randomUUID(),
                   label: "Date & Location",
                   content: "",
                   priority: "body",
+                  color: "random",
                 },
                 {
                   id: crypto.randomUUID(),
                   label: "Additional Info",
                   content: "",
                   priority: "small",
+                  color: "random",
                 },
               ]);
             }}
