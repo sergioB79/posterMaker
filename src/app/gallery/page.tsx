@@ -111,7 +111,7 @@ export default function GalleryPage() {
             <span className="text-sm text-neutral-400">Gallery</span>
           </div>
           <Link
-            href="/"
+            href="/create"
             className="text-xs text-orange-400 hover:text-orange-300 transition-colors"
           >
             + New Poster
@@ -170,7 +170,7 @@ export default function GalleryPage() {
             <h3 className="text-lg font-medium text-neutral-300 mb-1">No saved posters yet</h3>
             <p className="text-sm text-neutral-500 mb-4">Generate some posters and save them to see them here.</p>
             <Link
-              href="/"
+              href="/create"
               className="inline-flex items-center gap-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium py-2 px-4 transition-colors"
             >
               Create a poster
