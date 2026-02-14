@@ -1,7 +1,47 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { GeneratedPoster, PosterFormState } from "@/lib/types";
+
+const waitingJokes = [
+  "I'm on a whiskey diet; I've lost three days already.",
+  "My bed is a magical place where I suddenly remember everything I forgot to do.",
+  "I have a lot of jokes about unemployed people, but it doesn't matter none of them work.",
+  "I'm not lazy, I'm just on energy-saving mode.",
+  "My vacuum cleaner sucks, which is actually the only thing it's good at.",
+  "I used to think I was indecisive, but now I'm not so sure.",
+  "Common sense is like deodorant\u2014the people who need it most never use it.",
+  "My bank account is basically a \"404 Error\" at this point.",
+  "I finally got my eight hours of sleep; it took me three days, but I did it.",
+  "I don't need a hair stylist; my pillow gives me a new look every morning.",
+  "My doctor told me to watch my drinking, so now I do it in front of a mirror.",
+  "I don't trip; I do random gravity checks.",
+  "I'm not arguing, I'm just explaining why I'm right.",
+  "I'm great at multitasking: I can waste time, be unproductive, and procrastinate all at once.",
+  "People say \"nothing is impossible,\" but I do nothing every day.",
+  "I don't suffer from insanity; I enjoy every minute of it.",
+  "Why is \"abbreviated\" such a long word?",
+  "I told my wife she was drawing her eyebrows too high; she looked surprised.",
+  "The first 40 years of childhood are always the hardest.",
+  "I'm reading a book on anti-gravity; it's impossible to put down.",
+  "Life is short\u2014smile while you still have teeth.",
+  "Being an artist is just a fancy way of saying you have a very expensive hobby and a very cheap diet.",
+  "I'm a \"starving artist,\" but mostly because I spent my grocery money on a specific shade of \"Midnight Teal.\"",
+  "I don't make mistakes, I just create \"unexpected textures.\"",
+  "My sketchbook is 10% actual drawings and 90% \"I'll finish this later\" lies.",
+  "I'm not messy; I'm just constantly covered in the evidence of my creativity.",
+  "Modern art is basically just a competition to see who can get away with the least amount of effort for the most amount of money.",
+  "Abstract art: a product of the untalented, sold by the unprincipled to the utterly bewildered.",
+  "I like my art like I like my people: framed and hanging on a wall where they can't talk back.",
+  "Sculpture is what you bump into when you back up to look at a painting.",
+  "My favorite medium is \"rarely finished.\"",
+  "I'm an expert at \"minimalism\"\u2014at least that's what I tell people when I forget to draw the background.",
+  "Earth without \"art\" is just \"eh.\"",
+  "Color theory is just a sophisticated way of arguing about whether something is \"eggshell\" or \"cream.\"",
+  "A true masterpiece is any painting sold for more than the cost of the frame.",
+  "I'm currently working on a \"limited edition\" series; I'm limiting it to the one I actually finished.",
+  "\"Mixed media\" is just Latin for \"I found a bunch of stuff in the junk drawer and glued it together.\"",
+];
 
 interface PosterPreviewProps {
   posters: GeneratedPoster[];
@@ -22,7 +62,20 @@ export default function PosterPreview({
   const [sharing, setSharing] = useState<Record<string, boolean>>({});
   const [shared, setShared] = useState<Record<string, boolean>>({});
   const [showPrompt, setShowPrompt] = useState(false);
+  const [joke, setJoke] = useState<string | null>(null);
+  const [usedJokes, setUsedJokes] = useState<Set<number>>(new Set());
   const selected = posters[selectedIndex];
+
+  const getRandomJoke = useCallback(() => {
+    let available = waitingJokes.map((_, i) => i).filter((i) => !usedJokes.has(i));
+    if (available.length === 0) {
+      setUsedJokes(new Set());
+      available = waitingJokes.map((_, i) => i);
+    }
+    const idx = available[Math.floor(Math.random() * available.length)];
+    setUsedJokes((prev) => new Set(prev).add(idx));
+    setJoke(waitingJokes[idx]);
+  }, [usedJokes]);
 
   // Reset selection when new posters arrive
   useEffect(() => {
@@ -30,6 +83,8 @@ export default function PosterPreview({
     setSaved({});
     setShared({});
     setShowPrompt(false);
+    setJoke(null);
+    setUsedJokes(new Set());
   }, [posters]);
 
   const handleDownload = async (poster: GeneratedPoster) => {
@@ -165,7 +220,28 @@ export default function PosterPreview({
           <div className="absolute inset-0 rounded-2xl border-2 border-orange-500 border-t-transparent animate-spin" />
         </div>
         <h3 className="text-lg font-medium text-neutral-300 mb-1">Generating your poster...</h3>
-        <p className="text-sm text-neutral-500">The AI is designing variations based on your brief.</p>
+        <p className="text-sm text-neutral-500 mb-4">This can take a little while. Be patient, great art takes time.</p>
+
+        {joke ? (
+          <div className="max-w-sm space-y-3">
+            <p className="text-sm text-orange-200 italic">&ldquo;{joke}&rdquo;</p>
+            <button
+              type="button"
+              onClick={getRandomJoke}
+              className="text-xs text-orange-400 hover:text-orange-300 transition-colors"
+            >
+              Another one?
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={getRandomJoke}
+            className="text-xs text-orange-400 hover:text-orange-300 transition-colors"
+          >
+            Want to hear a joke while you wait?
+          </button>
+        )}
       </div>
     );
   }
