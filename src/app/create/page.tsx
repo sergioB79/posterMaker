@@ -20,7 +20,12 @@ import { buildPrompt, type TextField } from "@/lib/prompt-builder";
 
 const initialState: PosterFormState = {
   brief: "",
-  textFields: [],
+  textFields: [
+    { id: "tf-1", label: "Title", content: "", priority: "H1", color: "random" },
+    { id: "tf-2", label: "Subtitle", content: "", priority: "H2", color: "random" },
+    { id: "tf-3", label: "Date & Location", content: "", priority: "body", color: "random" },
+    { id: "tf-4", label: "Additional Info", content: "", priority: "small", color: "random" },
+  ],
   styleId: "auto",
   remixId: "",
   formatId: "a4-portrait",

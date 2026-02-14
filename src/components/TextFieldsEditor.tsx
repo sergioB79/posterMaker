@@ -215,45 +215,9 @@ export default function TextFieldsEditor({
         )}
 
         {fields.length === 0 && (
-          <button
-            type="button"
-            onClick={() => {
-              // Add default fields
-              onChange([
-                {
-                  id: crypto.randomUUID(),
-                  label: "Title",
-                  content: "",
-                  priority: "H1",
-                  color: "random",
-                },
-                {
-                  id: crypto.randomUUID(),
-                  label: "Subtitle",
-                  content: "",
-                  priority: "H2",
-                  color: "random",
-                },
-                {
-                  id: crypto.randomUUID(),
-                  label: "Date & Location",
-                  content: "",
-                  priority: "body",
-                  color: "random",
-                },
-                {
-                  id: crypto.randomUUID(),
-                  label: "Additional Info",
-                  content: "",
-                  priority: "small",
-                  color: "random",
-                },
-              ]);
-            }}
-            className="w-full rounded-lg border border-dashed border-neutral-700 py-3 text-sm text-neutral-500 hover:text-neutral-300 hover:border-neutral-500 transition-colors"
-          >
-            Click to add default fields (Title, Subtitle, Date, Info)
-          </button>
+          <p className="text-xs text-neutral-500 text-center py-2">
+            No text fields — click &quot;+ Add field&quot; above
+          </p>
         )}
       </div>
     </div>
