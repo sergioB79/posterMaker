@@ -15,6 +15,8 @@ export default function GalleryPage() {
   const [showPrompt, setShowPrompt] = useState(false);
   const [filterFolder, setFilterFolder] = useState<string>("all");
   const [folders, setFolders] = useState<string[]>([]);
+  const [sharingId, setSharingId] = useState<string | null>(null);
+  const [sharedIds, setSharedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetch("/api/gallery")
@@ -61,7 +63,32 @@ export default function GalleryPage() {
     } catch {
       // If storage fails, still navigate
     }
-    router.push("/?load=1");
+    router.push("/create?load=1");
+  };
+
+  const handleShare = async (poster: SavedPoster & { imagePath: string }) => {
+    setSharingId(poster.id);
+    try {
+      const res = await fetch("/api/showcase", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageUrl: poster.imagePath,
+          brief: poster.brief || "",
+          styleId: poster.styleId || null,
+          formatId: poster.formatId || null,
+          influenceIds: poster.influenceIds || [],
+          tones: poster.tones || [],
+        }),
+      });
+      if (res.ok || res.status === 409) {
+        setSharedIds((prev) => new Set(prev).add(poster.id));
+      }
+    } catch {
+      // ignore
+    } finally {
+      setSharingId(null);
+    }
   };
 
   return (
@@ -282,6 +309,24 @@ export default function GalleryPage() {
                 className="w-full mt-2 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-xs font-medium py-2 transition-colors border border-neutral-700"
               >
                 Load in editor
+              </button>
+
+              {/* Share to showcase */}
+              <button
+                type="button"
+                onClick={() => handleShare(selectedPoster)}
+                disabled={sharingId === selectedPoster.id || sharedIds.has(selectedPoster.id)}
+                className={`w-full mt-2 rounded-lg text-xs font-medium py-2 transition-colors border flex items-center justify-center gap-1.5 ${
+                  sharedIds.has(selectedPoster.id)
+                    ? "bg-green-500/10 border-green-500/30 text-green-400"
+                    : "bg-neutral-800 hover:bg-neutral-700 border-neutral-700 text-neutral-300"
+                }`}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
+                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                </svg>
+                {sharedIds.has(selectedPoster.id) ? "Shared to Showcase" : sharingId === selectedPoster.id ? "Sharing..." : "Share to Showcase"}
               </button>
             </div>
           </div>

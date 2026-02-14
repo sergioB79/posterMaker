@@ -19,6 +19,8 @@ export default function PosterPreview({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [saving, setSaving] = useState<Record<string, boolean>>({});
   const [saved, setSaved] = useState<Record<string, boolean>>({});
+  const [sharing, setSharing] = useState<Record<string, boolean>>({});
+  const [shared, setShared] = useState<Record<string, boolean>>({});
   const [showPrompt, setShowPrompt] = useState(false);
   const selected = posters[selectedIndex];
 
@@ -26,6 +28,7 @@ export default function PosterPreview({
   useEffect(() => {
     setSelectedIndex(0);
     setSaved({});
+    setShared({});
     setShowPrompt(false);
   }, [posters]);
 
@@ -99,6 +102,35 @@ export default function PosterPreview({
       if (!saved[poster.id]) {
         await handleSave(poster);
       }
+    }
+  };
+
+  const handleShare = async (poster: GeneratedPoster) => {
+    setSharing((prev) => ({ ...prev, [poster.id]: true }));
+    try {
+      // Save first if not already saved
+      if (!saved[poster.id]) {
+        await handleSave(poster);
+      }
+      const res = await fetch("/api/showcase", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageUrl: poster.imageUrl,
+          brief: formState?.brief || "",
+          styleId: formState?.styleId || null,
+          formatId: formState?.formatId || null,
+          influenceIds: formState?.influenceIds || [],
+          tones: formState?.tones || [],
+        }),
+      });
+      if (res.ok || res.status === 409) {
+        setShared((prev) => ({ ...prev, [poster.id]: true }));
+      }
+    } catch {
+      // ignore
+    } finally {
+      setSharing((prev) => ({ ...prev, [poster.id]: false }));
     }
   };
 
@@ -248,11 +280,29 @@ export default function PosterPreview({
           <div className="flex gap-2">
             <button
               type="button"
+              onClick={() => handleShare(selected)}
+              disabled={sharing[selected.id] || shared[selected.id]}
+              className={`flex-1 rounded-lg text-xs font-medium py-2 transition-colors border flex items-center justify-center gap-1.5 ${
+                shared[selected.id]
+                  ? "bg-green-500/10 border-green-500/30 text-green-400"
+                  : "bg-neutral-800 hover:bg-neutral-700 border-neutral-700 text-neutral-300"
+              }`}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+              </svg>
+              {shared[selected.id] ? "Shared" : sharing[selected.id] ? "..." : "Share"}
+            </button>
+            <button
+              type="button"
               onClick={() => setShowPrompt(!showPrompt)}
               className="flex-1 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-xs font-medium py-2 transition-colors border border-neutral-700"
             >
               {showPrompt ? "Hide Prompt" : "Show Prompt"}
             </button>
+          </div>
+          <div className="flex gap-2">
             {posters.length > 1 && (
               <button
                 type="button"
@@ -265,7 +315,7 @@ export default function PosterPreview({
             <button
               type="button"
               onClick={() => selected && window.open(selected.imageUrl, "_blank")}
-              className="rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-xs font-medium py-2 px-3 transition-colors border border-neutral-700"
+              className="flex-1 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-xs font-medium py-2 transition-colors border border-neutral-700"
             >
               Full Size
             </button>

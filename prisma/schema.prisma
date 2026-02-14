@@ -24,6 +24,7 @@ model User {
   sessions      Session[]
   transactions  CreditTransaction[]
   generations   Generation[]
+  sharedPosters SharedPoster[]
 }
 
 model Account {
@@ -90,4 +91,24 @@ model Generation {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+// ─── Showcase (shared posters) ──────────────────────────────
+
+model SharedPoster {
+  id            String   @id @default(cuid())
+  userId        String
+  imageUrl      String
+  brief         String   @db.Text
+  styleId       String?
+  formatId      String?
+  influenceIds  String[]
+  tones         String[]
+  authorName    String?
+  createdAt     DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
 }
