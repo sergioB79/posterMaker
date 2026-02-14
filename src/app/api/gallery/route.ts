@@ -38,20 +38,17 @@ export async function GET(req: NextRequest) {
       })
     );
 
-    const posters = results
-      .filter((r): r is PromiseFulfilledResult<Record<string, unknown>> => r.status === "fulfilled")
-      .map((r) => {
-        const meta = r.value;
-        return {
-          ...meta,
-          imagePath: meta.imageUrl || meta.imagePath || "",
-        };
-      });
-
-    // Extract folders from current results
+    const posters: Record<string, unknown>[] = [];
     const dateFolders = new Set<string>();
-    for (const p of posters) {
-      if (p.folder) dateFolders.add(p.folder as string);
+
+    for (const r of results) {
+      if (r.status !== "fulfilled") continue;
+      const meta = r.value as Record<string, unknown>;
+      posters.push({
+        ...meta,
+        imagePath: meta.imageUrl || meta.imagePath || "",
+      });
+      if (meta.folder) dateFolders.add(meta.folder as string);
     }
 
     return NextResponse.json({
