@@ -42,11 +42,21 @@ function buildTextSpellingBlock(fields: TextField[]): string {
   if (filled.length === 0) return "";
 
   const lines = filled.map((f) => {
-    const chars = f.content.split("").join(" · ");
-    return `  "${f.content}" → ${chars}`;
+    const words = f.content.split(/\s+/);
+    const wordBreakdown = words
+      .map((w) => `"${w}" (${w.length} chars: ${w.split("").join("-")})`)
+      .join("  ");
+    return `  "${f.content}" — total ${f.content.length} characters — ${wordBreakdown}`;
   });
 
-  return `\n\nEXACT TEXT REFERENCE (spell-check against this — every character matters):\n${lines.join("\n")}`;
+  const textList = filled.map((f) => `"${f.content}"`).join(", ");
+
+  return `\n\nTEXT VERIFICATION — read each word carefully before rendering:
+${lines.join("\n")}
+
+CRITICAL: The poster MUST contain exactly these strings: ${textList}
+Do NOT drop, shorten, or truncate any letters. Every word must have ALL its letters.
+After rendering, mentally verify: does every word match the character count above?`;
 }
 
 function buildStyleSection(request: PosterRequest): string {
@@ -159,13 +169,15 @@ Your goal is to design striking, professional posters that could realistically b
 
 ABSOLUTE TEXT RULES — VIOLATING THESE IS A FAILURE:
 1. ONLY use the text provided in TEXT CONTENT. Do NOT invent, add, or improvise ANY extra words, labels, dates, taglines, or phrases.
-2. Every text element MUST appear EXACTLY as written — same spelling, same capitalization, same punctuation, same language.
-3. Do NOT rephrase, abbreviate, translate, correct, or "improve" any text.
-4. Do NOT add words like "presents", "live", "featuring", "tickets at", or any other text not explicitly provided.
-5. Do NOT split words across lines mid-word.
-6. If TEXT CONTENT has 3 items, the poster must have exactly 3 text elements — no more, no less.
-7. Text must be LEGIBLE — clear typefaces, sufficient contrast, appropriate sizing.
-8. H1 = largest/most prominent. H2 = secondary. body = supporting. small = fine print.
+2. Every text element MUST appear EXACTLY as written — same spelling, same capitalization, same punctuation, same language. Every single letter matters.
+3. Do NOT rephrase, abbreviate, translate, correct, truncate, or "improve" any text.
+4. Do NOT drop letters from words. "SOLO" must be S-O-L-O (4 letters), not "SOL" (3 letters). "STOKED" must be S-T-O-K-E-D (6 letters), not "STOKE" (5 letters). Render COMPLETE words.
+5. Do NOT add words like "presents", "live", "featuring", "tickets at", or any other text not explicitly provided.
+6. Do NOT split words across lines mid-word.
+7. If TEXT CONTENT has 3 items, the poster must have exactly 3 text elements — no more, no less.
+8. Text must be LEGIBLE — clear typefaces, sufficient contrast, appropriate sizing.
+9. H1 = largest/most prominent. H2 = secondary. body = supporting. small = fine print.
+10. Before finalizing, verify every word has ALL its letters — missing trailing letters is a common error.
 
 When generating a poster image:
 - Create the actual poster artwork, not a description
@@ -246,6 +258,6 @@ export function buildVariationPrompt(
 VARIATION ${variationIndex + 1} OF ${totalVariations}
 ${instruction}
 Make this variation distinctly different from other versions while staying true to the brief and style.
-REMINDER: Use ONLY the provided text — do not add or change ANY words. Spell every word exactly as given.`,
+REMINDER: Use ONLY the provided text — do not add or change ANY words. Spell every word COMPLETELY — do not drop trailing letters. Verify each word has the correct number of characters before finalizing.`,
   };
 }
