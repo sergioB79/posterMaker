@@ -18,55 +18,6 @@ import PosterPreview from "@/components/PosterPreview";
 import type { PosterFormState, GeneratedPoster } from "@/lib/types";
 import { buildPrompt, type TextField } from "@/lib/prompt-builder";
 
-function ContentWarning() {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2">
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 text-[11px] text-amber-400 hover:text-amber-300 transition-colors w-full text-left"
-      >
-        <span>&#9888;&#65039;</span>
-        <span className="font-medium">About Content Restrictions & Generations</span>
-        <svg
-          width="12"
-          height="12"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          className={`ml-auto transition-transform ${open ? "rotate-180" : ""}`}
-        >
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
-      </button>
-      {open && (
-        <div className="mt-2 space-y-2 text-[11px] text-neutral-400 leading-relaxed">
-          <p>
-            Some prompts may be declined or automatically blocked due to content safety rules.
-          </p>
-          <p>
-            The image engine applies internal moderation based on broad content categories (e.g., violence, explicit material, hate symbols, illegal activity, etc.). These restrictions are not based on a public &ldquo;banned word&rdquo; list — the system evaluates the overall meaning and context of each request.
-          </p>
-          <p>
-            Because each generation request is processed immediately and incurs a real cost on our side, <strong className="text-amber-400/80">we are unable to refund or undo a generation once it has been submitted</strong>, even if the result is blocked or declined.
-          </p>
-          <p>
-            We understand this can be frustrating, and we truly appreciate your understanding.
-          </p>
-          <p>
-            If your prompt is rejected, we recommend rephrasing it with neutral, artistic, or symbolic language while avoiding sensitive themes.
-          </p>
-          <p className="text-amber-400/70">
-            Thank you for helping us keep the platform creative, safe, and sustainable.
-          </p>
-        </div>
-      )}
-    </div>
-  );
-}
-
 const initialState: PosterFormState = {
   brief: "",
   textFields: [
@@ -358,7 +309,6 @@ function CreateContent() {
           <div className="space-y-5">
             {/* 1. Brief */}
             <BriefInput value={form.brief} onChange={(v) => updateForm("brief", v)} />
-            <ContentWarning />
 
             {/* 2. Text Fields (dynamic) */}
             <TextFieldsEditor fields={form.textFields} onChange={(v: TextField[]) => updateForm("textFields", v)} />
