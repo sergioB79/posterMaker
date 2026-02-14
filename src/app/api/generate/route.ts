@@ -85,10 +85,13 @@ async function savePosterToDisk(params: {
   brief: string;
   textFields: PosterRequest["textFields"];
   styleId: string;
-  influenceIds: string[];
-  tones: string[];
+  remixId: string;
   formatId: string;
-  colorMode: PosterRequest["colorMode"];
+  tones: string[];
+  vibes: string[];
+  compositionId: string;
+  textureId: string;
+  paletteId: string;
   customColors: string[];
 }) {
   const now = new Date();
@@ -129,10 +132,13 @@ async function savePosterToDisk(params: {
     brief: params.brief || "",
     textFields: params.textFields || [],
     styleId: params.styleId || "",
-    influenceIds: params.influenceIds || [],
-    tones: params.tones || [],
+    remixId: params.remixId || "",
     formatId: params.formatId || "",
-    colorMode: params.colorMode || "auto",
+    tones: params.tones || [],
+    vibes: params.vibes || [],
+    compositionId: params.compositionId || "auto",
+    textureId: params.textureId || "none",
+    paletteId: params.paletteId || "auto",
     customColors: params.customColors || [],
     createdAt: now.toISOString(),
     folder: dateStr,
@@ -167,10 +173,13 @@ export async function POST(req: NextRequest) {
       brief,
       textFields,
       styleId,
-      influenceIds,
+      remixId,
       formatId,
       tones,
-      colorMode,
+      vibes,
+      compositionId,
+      textureId,
+      paletteId,
       customColors,
     } = body;
 
@@ -185,10 +194,13 @@ export async function POST(req: NextRequest) {
       brief,
       textFields: textFields || [],
       styleId: styleId || "auto",
-      influenceIds: influenceIds || [],
+      remixId: remixId || "",
       formatId: formatId || "a4-portrait",
       tones: tones || [],
-      colorMode,
+      vibes: vibes || [],
+      compositionId: compositionId || "auto",
+      textureId: textureId || "none",
+      paletteId: paletteId || "auto",
       customColors,
     };
 
@@ -248,10 +260,13 @@ export async function POST(req: NextRequest) {
           brief: request.brief,
           textFields: request.textFields,
           styleId: request.styleId,
-          influenceIds: request.influenceIds,
-          tones: request.tones || [],
+          remixId: request.remixId || "",
           formatId: request.formatId,
-          colorMode: request.colorMode,
+          tones: request.tones || [],
+          vibes: request.vibes || [],
+          compositionId: request.compositionId || "auto",
+          textureId: request.textureId || "none",
+          paletteId: request.paletteId || "auto",
           customColors: request.customColors || [],
         });
         posters.push({

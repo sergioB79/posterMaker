@@ -4,10 +4,13 @@ export interface PosterFormState {
   brief: string;
   textFields: TextField[];
   styleId: string;
-  influenceIds: string[];
+  remixId: string;
   formatId: string;
   tones: string[];
-  colorMode: "auto" | "custom";
+  vibes: string[];
+  compositionId: string;
+  textureId: string;
+  paletteId: string;
   customColors: string[];
 }
 
@@ -25,13 +28,19 @@ export interface SavedPoster {
   brief: string;
   textFields: TextField[];
   styleId: string;
-  influenceIds: string[];
+  remixId?: string;
   tones: string[];
-  formatId: string;
-  colorMode: "auto" | "custom";
+  vibes?: string[];
+  compositionId?: string;
+  textureId?: string;
+  paletteId?: string;
   customColors: string[];
   createdAt: string;
   folder: string;
+  // Legacy fields (old posters may have these)
+  influenceIds?: string[];
+  formatId?: string;
+  colorMode?: "auto" | "custom";
 }
 
 export interface GenerationResult {

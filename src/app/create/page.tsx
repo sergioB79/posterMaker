@@ -7,9 +7,13 @@ import Link from "next/link";
 import BriefInput from "@/components/BriefInput";
 import TextFieldsEditor from "@/components/TextFieldsEditor";
 import StyleSelector from "@/components/StyleSelector";
-import InfluenceSelector from "@/components/InfluenceSelector";
+import RemixSelector from "@/components/RemixSelector";
 import FormatSelector from "@/components/FormatSelector";
 import ToneSelector from "@/components/ToneSelector";
+import VibeSelector from "@/components/VibeSelector";
+import CompositionSelector from "@/components/CompositionSelector";
+import TextureSelector from "@/components/TextureSelector";
+import PaletteSelector from "@/components/PaletteSelector";
 import PosterPreview from "@/components/PosterPreview";
 import type { PosterFormState, GeneratedPoster } from "@/lib/types";
 import { buildPrompt, type TextField } from "@/lib/prompt-builder";
@@ -18,10 +22,13 @@ const initialState: PosterFormState = {
   brief: "",
   textFields: [],
   styleId: "auto",
-  influenceIds: [],
+  remixId: "",
   formatId: "a4-portrait",
   tones: [],
-  colorMode: "auto",
+  vibes: [],
+  compositionId: "auto",
+  textureId: "none",
+  paletteId: "auto",
   customColors: [],
 };
 
@@ -200,7 +207,7 @@ function CreateContent() {
   const handleLoadConfig = (id: string) => {
     const found = savedConfigs.find((c) => c.id === id);
     if (!found) return;
-    setForm(found.form);
+    setForm({ ...initialState, ...found.form });
     setPosters([]);
     setError(undefined);
   };
@@ -293,39 +300,79 @@ function CreateContent() {
       {/* Main content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-[420px_1fr] gap-6">
-          {/* Left column */}
+          {/* Left column — form */}
           <div className="space-y-5">
+            {/* 1. Brief */}
             <BriefInput value={form.brief} onChange={(v) => updateForm("brief", v)} />
-            <TextFieldsEditor fields={form.textFields} onChange={(v: TextField[]) => updateForm("textFields", v)} />
-            <StyleSelector value={form.styleId} onChange={(v) => updateForm("styleId", v)} />
-            <InfluenceSelector selected={form.influenceIds} onChange={(v) => updateForm("influenceIds", v)} />
-            <FormatSelector value={form.formatId} onChange={(v) => updateForm("formatId", v)} />
-            <ToneSelector selected={form.tones} onChange={(v) => updateForm("tones", v)} />
 
-            {/* Variations */}
-            <div>
-              <label className="block text-sm font-medium text-neutral-300 mb-1.5">Variations</label>
-              <div className="flex gap-1.5">
-                {[1, 2, 3, 4, 6].map((n) => (
-                  <button
-                    key={n}
-                    type="button"
-                    onClick={() => setVariations(n)}
-                    className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${
-                      variations === n
-                        ? "bg-orange-500/15 border border-orange-500/40 text-orange-300"
-                        : "bg-neutral-800 border border-neutral-700 text-neutral-400 hover:border-neutral-600"
-                    }`}
-                  >
-                    {n}
-                  </button>
-                ))}
+            {/* 2. Text Fields (dynamic) */}
+            <TextFieldsEditor fields={form.textFields} onChange={(v: TextField[]) => updateForm("textFields", v)} />
+
+            {/* ── Visual Foundation ── */}
+            <div className="border-t border-neutral-800 pt-4">
+              <h3 className="text-[10px] uppercase tracking-wider text-neutral-500 mb-3">Visual Foundation</h3>
+              <div className="space-y-4">
+                <StyleSelector value={form.styleId} onChange={(v) => updateForm("styleId", v)} />
+                <RemixSelector value={form.remixId} onChange={(v) => updateForm("remixId", v)} />
+                <VibeSelector selected={form.vibes} onChange={(v) => updateForm("vibes", v)} />
               </div>
-              {credits !== null && (
-                <p className="text-[10px] text-neutral-500 mt-1">
-                  Uses {variations} credit{variations !== 1 ? "s" : ""} ({credits} remaining)
-                </p>
-              )}
+            </div>
+
+            {/* ── Layout & Composition ── */}
+            <div className="border-t border-neutral-800 pt-4">
+              <h3 className="text-[10px] uppercase tracking-wider text-neutral-500 mb-3">Layout & Composition</h3>
+              <div className="space-y-4">
+                <CompositionSelector value={form.compositionId} onChange={(v) => updateForm("compositionId", v)} />
+                <PaletteSelector
+                  value={form.paletteId}
+                  customColors={form.customColors}
+                  onPaletteChange={(v) => updateForm("paletteId", v)}
+                  onCustomColorsChange={(v) => updateForm("customColors", v)}
+                />
+              </div>
+            </div>
+
+            {/* ── Tone & Finish ── */}
+            <div className="border-t border-neutral-800 pt-4">
+              <h3 className="text-[10px] uppercase tracking-wider text-neutral-500 mb-3">Tone & Finish</h3>
+              <div className="space-y-4">
+                <ToneSelector selected={form.tones} onChange={(v) => updateForm("tones", v)} />
+                <TextureSelector value={form.textureId} onChange={(v) => updateForm("textureId", v)} />
+              </div>
+            </div>
+
+            {/* ── Technical ── */}
+            <div className="border-t border-neutral-800 pt-4">
+              <h3 className="text-[10px] uppercase tracking-wider text-neutral-500 mb-3">Technical</h3>
+              <div className="space-y-4">
+                <FormatSelector value={form.formatId} onChange={(v) => updateForm("formatId", v)} />
+
+                {/* Variations */}
+                <div>
+                  <label className="block text-sm font-medium text-neutral-300 mb-1.5">Variations</label>
+                  <div className="flex gap-1.5">
+                    {[1, 2, 3, 4, 6].map((n) => (
+                      <button
+                        key={n}
+                        type="button"
+                        onClick={() => setVariations(n)}
+                        className={`rounded-lg px-3 py-1.5 text-sm transition-colors ${
+                          variations === n
+                            ? "bg-orange-500/15 border border-orange-500/40 text-orange-300"
+                            : "bg-neutral-800 border border-neutral-700 text-neutral-400 hover:border-neutral-600"
+                        }`}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                  {credits !== null && (
+                    <p className="text-[10px] text-neutral-500 mt-1">
+                      Uses {variations} credit{variations !== 1 ? "s" : ""} ({credits} remaining)
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* Generate */}
@@ -400,7 +447,7 @@ function CreateContent() {
             </button>
           </div>
 
-          {/* Right column */}
+          {/* Right column — preview */}
           <div className="lg:sticky lg:top-20 lg:self-start rounded-2xl bg-neutral-900 border border-neutral-800 overflow-hidden min-h-[500px]">
             <PosterPreview posters={posters} isLoading={isLoading} error={error} formState={form} />
           </div>

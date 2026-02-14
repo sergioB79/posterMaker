@@ -4,8 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { SavedPoster } from "@/lib/types";
-import { artists } from "@/data/artists";
 import { styles } from "@/data/styles";
+import { remixes } from "@/data/remixes";
 
 export default function GalleryPage() {
   const router = useRouter();
@@ -34,11 +34,8 @@ export default function GalleryPage() {
       ? posters
       : posters.filter((p) => p.folder === filterFolder);
 
-  const getInfluenceNames = (ids: string[]) =>
-    ids
-      .map((id) => artists.find((a) => a.id === id)?.name)
-      .filter(Boolean)
-      .join(", ");
+  const getRemixName = (id?: string) =>
+    id ? remixes.find((r) => r.id === id)?.name : null;
 
   const getStyleName = (id: string) =>
     styles.find((s) => s.id === id)?.name || id;
@@ -47,10 +44,13 @@ export default function GalleryPage() {
     brief: poster.brief || "",
     textFields: poster.textFields || [],
     styleId: poster.styleId || "auto",
-    influenceIds: poster.influenceIds || [],
+    remixId: poster.remixId || "",
     formatId: poster.formatId || "a4-portrait",
     tones: poster.tones || [],
-    colorMode: poster.colorMode || "auto",
+    vibes: poster.vibes || [],
+    compositionId: poster.compositionId || "auto",
+    textureId: poster.textureId || "none",
+    paletteId: poster.paletteId || "auto",
     customColors: poster.customColors || [],
   });
 
@@ -77,7 +77,7 @@ export default function GalleryPage() {
           brief: poster.brief || "",
           styleId: poster.styleId || null,
           formatId: poster.formatId || null,
-          influenceIds: poster.influenceIds || [],
+          influenceIds: [],
           tones: poster.tones || [],
         }),
       });
@@ -247,10 +247,10 @@ export default function GalleryPage() {
                   <span className="text-neutral-500 block mb-0.5">Style</span>
                   <span className="text-neutral-300">{getStyleName(selectedPoster.styleId)}</span>
                 </div>
-                {selectedPoster.influenceIds.length > 0 && (
+                {getRemixName(selectedPoster.remixId) && (
                   <div>
-                    <span className="text-neutral-500 block mb-0.5">Influences</span>
-                    <span className="text-neutral-300">{getInfluenceNames(selectedPoster.influenceIds)}</span>
+                    <span className="text-neutral-500 block mb-0.5">Remix</span>
+                    <span className="text-neutral-300">{getRemixName(selectedPoster.remixId)}</span>
                   </div>
                 )}
                 {selectedPoster.tones.length > 0 && (
