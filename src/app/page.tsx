@@ -18,7 +18,7 @@ export default function LandingPage() {
           </div>
           <div className="flex items-center gap-4">
             <Link href="/pricing" className="text-sm text-neutral-400 hover:text-white transition-colors">Pricing</Link>
-            <Link href="/gallery" className="text-sm text-neutral-400 hover:text-white transition-colors">Gallery</Link>
+            <Link href="/showcase" className="text-sm text-neutral-400 hover:text-white transition-colors">Showcase</Link>
             <Link href="/auth/signin" className="text-sm text-neutral-300 hover:text-white transition-colors">Sign in</Link>
             <Link href="/auth/signin" className="rounded-lg bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-medium px-4 py-2 text-sm transition-all">
               Get Started Free
@@ -138,7 +138,10 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 flex items-center justify-between text-xs text-neutral-600">
           <span>Poster Maker</span>
           <div className="flex items-center gap-4">
+            <Link href="/showcase" className="hover:text-neutral-400 transition-colors">Showcase</Link>
             <Link href="/pricing" className="hover:text-neutral-400 transition-colors">Pricing</Link>
+            <Link href="/terms" className="hover:text-neutral-400 transition-colors">Terms</Link>
+            <Link href="/privacy" className="hover:text-neutral-400 transition-colors">Privacy</Link>
             <Link href="/auth/signin" className="hover:text-neutral-400 transition-colors">Sign in</Link>
           </div>
         </div>

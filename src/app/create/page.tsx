@@ -256,6 +256,7 @@ function CreateContent() {
               </Link>
             )}
             <Link href="/gallery" className="text-xs text-neutral-400 hover:text-orange-300 transition-colors">Gallery</Link>
+            <Link href="/showcase" className="text-xs text-neutral-400 hover:text-orange-300 transition-colors">Showcase</Link>
             <div className="flex items-center gap-2">
               {session.user.image ? (
                 <img src={session.user.image} alt="" className="w-7 h-7 rounded-full border border-neutral-700" />
