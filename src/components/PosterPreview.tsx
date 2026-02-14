@@ -57,10 +57,9 @@ export default function PosterPreview({
   formState,
 }: PosterPreviewProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [saving, setSaving] = useState<Record<string, boolean>>({});
-  const [saved, setSaved] = useState<Record<string, boolean>>({});
   const [sharing, setSharing] = useState<Record<string, boolean>>({});
   const [shared, setShared] = useState<Record<string, boolean>>({});
+  const [unsharing, setUnsharing] = useState<Record<string, boolean>>({});
   const [showPrompt, setShowPrompt] = useState(false);
   const [joke, setJoke] = useState<string | null>(null);
   const [usedJokes, setUsedJokes] = useState<Set<number>>(new Set());
@@ -80,7 +79,6 @@ export default function PosterPreview({
   // Reset selection when new posters arrive
   useEffect(() => {
     setSelectedIndex(0);
-    setSaved({});
     setShared({});
     setShowPrompt(false);
     setJoke(null);
@@ -113,63 +111,9 @@ export default function PosterPreview({
     }
   };
 
-  const [saveError, setSaveError] = useState<string>();
-
-  const handleSave = async (poster: GeneratedPoster) => {
-    setSaving((prev) => ({ ...prev, [poster.id]: true }));
-    setSaveError(undefined);
-    try {
-      const res = await fetch("/api/save", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          imageData: poster.imageUrl,
-          prompt: poster.prompt,
-          metadata: formState
-            ? {
-                brief: formState.brief,
-                textFields: formState.textFields,
-                styleId: formState.styleId,
-                remixId: formState.remixId,
-                formatId: formState.formatId,
-                tones: formState.tones,
-                vibes: formState.vibes,
-                compositionId: formState.compositionId,
-                textureId: formState.textureId,
-                paletteId: formState.paletteId,
-                customColors: formState.customColors,
-              }
-            : {},
-        }),
-      });
-      if (res.ok) {
-        setSaved((prev) => ({ ...prev, [poster.id]: true }));
-      } else {
-        const data = await res.json().catch(() => ({}));
-        setSaveError(data.error || `Save failed (${res.status})`);
-      }
-    } catch (err) {
-      setSaveError(err instanceof Error ? err.message : "Save failed");
-    } finally {
-      setSaving((prev) => ({ ...prev, [poster.id]: false }));
-    }
-  };
-
-  const handleSaveAll = async () => {
-    for (const poster of posters) {
-      if (!saved[poster.id]) {
-        await handleSave(poster);
-      }
-    }
-  };
-
   const handleShare = async (poster: GeneratedPoster) => {
     setSharing((prev) => ({ ...prev, [poster.id]: true }));
     try {
-      // Save first if not already saved
-      if (!saved[poster.id]) {
-        await handleSave(poster);
-      }
       const res = await fetch("/api/showcase", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -189,6 +133,28 @@ export default function PosterPreview({
       // ignore
     } finally {
       setSharing((prev) => ({ ...prev, [poster.id]: false }));
+    }
+  };
+
+  const handleUnshare = async (poster: GeneratedPoster) => {
+    setUnsharing((prev) => ({ ...prev, [poster.id]: true }));
+    try {
+      const res = await fetch("/api/showcase", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageUrl: poster.imageUrl }),
+      });
+      if (res.ok) {
+        setShared((prev) => {
+          const next = { ...prev };
+          delete next[poster.id];
+          return next;
+        });
+      }
+    } catch {
+      // ignore
+    } finally {
+      setUnsharing((prev) => ({ ...prev, [poster.id]: false }));
     }
   };
 
@@ -292,7 +258,7 @@ export default function PosterPreview({
             >
               <img src={poster.imageUrl} alt={`Variation ${idx + 1}`} className="w-16 h-20 object-cover" />
               <div className="absolute bottom-0 inset-x-0 bg-black/60 text-[10px] text-white text-center py-0.5">
-                {saved[poster.id] ? "saved" : idx + 1}
+                {idx + 1}
               </div>
             </button>
           ))}
@@ -320,59 +286,48 @@ export default function PosterPreview({
         </div>
       )}
 
-      {/* Save error */}
-      {saveError && (
-        <div className="mx-4 mb-2 rounded-lg bg-red-500/10 border border-red-500/20 px-3 py-2 text-xs text-red-400">
-          Save error: {saveError}
-        </div>
-      )}
-
       {/* Actions */}
       {selected && (
         <div className="p-4 border-t border-neutral-800 space-y-2">
+          <button
+            type="button"
+            onClick={() => handleDownload(selected)}
+            className="w-full rounded-lg bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium py-2.5 transition-colors flex items-center justify-center gap-2"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            Download
+          </button>
           <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => handleDownload(selected)}
-              className="flex-1 rounded-lg bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium py-2.5 transition-colors flex items-center justify-center gap-2"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
-              </svg>
-              Download
-            </button>
-            <button
-              type="button"
-              onClick={() => handleSave(selected)}
-              disabled={saving[selected.id] || saved[selected.id]}
-              className={`rounded-lg text-sm font-medium py-2.5 px-4 transition-colors border flex items-center gap-1.5 ${
-                saved[selected.id]
-                  ? "bg-green-500/10 border-green-500/30 text-green-400"
-                  : "bg-neutral-800 hover:bg-neutral-700 border-neutral-700 text-neutral-300"
-              }`}
-            >
-              {saved[selected.id] ? "Saved" : saving[selected.id] ? "..." : "Save"}
-            </button>
-          </div>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => handleShare(selected)}
-              disabled={sharing[selected.id] || shared[selected.id]}
-              className={`flex-1 rounded-lg text-xs font-medium py-2 transition-colors border flex items-center justify-center gap-1.5 ${
-                shared[selected.id]
-                  ? "bg-green-500/10 border-green-500/30 text-green-400"
-                  : "bg-neutral-800 hover:bg-neutral-700 border-neutral-700 text-neutral-300"
-              }`}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
-                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-              </svg>
-              {shared[selected.id] ? "Shared" : sharing[selected.id] ? "..." : "Share"}
-            </button>
+            {shared[selected.id] ? (
+              <button
+                type="button"
+                onClick={() => handleUnshare(selected)}
+                disabled={unsharing[selected.id]}
+                className="flex-1 rounded-lg text-xs font-medium py-2 transition-colors border flex items-center justify-center gap-1.5 bg-red-500/10 border-red-500/30 text-red-400 hover:bg-red-500/20"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+                {unsharing[selected.id] ? "Removing..." : "Remove from Showcase"}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => handleShare(selected)}
+                disabled={sharing[selected.id]}
+                className="flex-1 rounded-lg text-xs font-medium py-2 transition-colors border flex items-center justify-center gap-1.5 bg-neutral-800 hover:bg-neutral-700 border-neutral-700 text-neutral-300"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
+                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                </svg>
+                {sharing[selected.id] ? "Sharing..." : "Share to Showcase"}
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setShowPrompt(!showPrompt)}
@@ -381,24 +336,13 @@ export default function PosterPreview({
               {showPrompt ? "Hide Prompt" : "Show Prompt"}
             </button>
           </div>
-          <div className="flex gap-2">
-            {posters.length > 1 && (
-              <button
-                type="button"
-                onClick={handleSaveAll}
-                className="flex-1 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-xs font-medium py-2 transition-colors border border-neutral-700"
-              >
-                Save All ({posters.length})
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => selected && window.open(selected.imageUrl, "_blank")}
-              className="flex-1 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-xs font-medium py-2 transition-colors border border-neutral-700"
-            >
-              Full Size
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => selected && window.open(selected.imageUrl, "_blank")}
+            className="w-full rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-xs font-medium py-2 transition-colors border border-neutral-700"
+          >
+            Full Size
+          </button>
         </div>
       )}
     </div>

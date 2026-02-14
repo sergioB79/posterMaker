@@ -16,17 +16,35 @@ export default function GalleryPage() {
   const [filterFolder, setFilterFolder] = useState<string>("all");
   const [folders, setFolders] = useState<string[]>([]);
   const [sharingId, setSharingId] = useState<string | null>(null);
+  const [unsharingId, setUnsharingId] = useState<string | null>(null);
   const [sharedIds, setSharedIds] = useState<Set<string>>(new Set());
+  // Maps gallery poster imagePath → set of shared imageUrls (for detecting already-shared)
+  const [sharedImageUrls, setSharedImageUrls] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    fetch("/api/gallery")
-      .then((r) => r.json())
-      .then((data) => {
-        setPosters(data.posters || []);
-        setFolders(data.folders || []);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    Promise.all([
+      fetch("/api/gallery").then((r) => r.json()),
+      fetch("/api/showcase?mine=true").then((r) => r.json()).catch(() => ({ shared: [] })),
+    ]).then(([galleryData, showcaseData]) => {
+      const galleryPosters = galleryData.posters || [];
+      setPosters(galleryPosters);
+      setFolders(galleryData.folders || []);
+
+      // Build set of imageUrls that are in showcase
+      const showcaseUrls = new Set<string>(
+        (showcaseData.shared || []).map((s: { imageUrl: string }) => s.imageUrl)
+      );
+      setSharedImageUrls(showcaseUrls);
+
+      // Mark gallery posters whose imagePath is already in showcase
+      const alreadyShared = new Set<string>();
+      for (const p of galleryPosters) {
+        if (showcaseUrls.has(p.imagePath)) {
+          alreadyShared.add(p.id);
+        }
+      }
+      setSharedIds(alreadyShared);
+    }).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
   const filtered =
@@ -83,11 +101,39 @@ export default function GalleryPage() {
       });
       if (res.ok || res.status === 409) {
         setSharedIds((prev) => new Set(prev).add(poster.id));
+        setSharedImageUrls((prev) => new Set(prev).add(poster.imagePath));
       }
     } catch {
       // ignore
     } finally {
       setSharingId(null);
+    }
+  };
+
+  const handleUnshare = async (poster: SavedPoster & { imagePath: string }) => {
+    setUnsharingId(poster.id);
+    try {
+      const res = await fetch("/api/showcase", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageUrl: poster.imagePath }),
+      });
+      if (res.ok) {
+        setSharedIds((prev) => {
+          const next = new Set(prev);
+          next.delete(poster.id);
+          return next;
+        });
+        setSharedImageUrls((prev) => {
+          const next = new Set(prev);
+          next.delete(poster.imagePath);
+          return next;
+        });
+      }
+    } catch {
+      // ignore
+    } finally {
+      setUnsharingId(null);
     }
   };
 
@@ -311,23 +357,33 @@ export default function GalleryPage() {
                 Load in editor
               </button>
 
-              {/* Share to showcase */}
-              <button
-                type="button"
-                onClick={() => handleShare(selectedPoster)}
-                disabled={sharingId === selectedPoster.id || sharedIds.has(selectedPoster.id)}
-                className={`w-full mt-2 rounded-lg text-xs font-medium py-2 transition-colors border flex items-center justify-center gap-1.5 ${
-                  sharedIds.has(selectedPoster.id)
-                    ? "bg-green-500/10 border-green-500/30 text-green-400"
-                    : "bg-neutral-800 hover:bg-neutral-700 border-neutral-700 text-neutral-300"
-                }`}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
-                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-                </svg>
-                {sharedIds.has(selectedPoster.id) ? "Shared to Showcase" : sharingId === selectedPoster.id ? "Sharing..." : "Share to Showcase"}
-              </button>
+              {/* Share / Unshare showcase */}
+              {sharedIds.has(selectedPoster.id) ? (
+                <button
+                  type="button"
+                  onClick={() => handleUnshare(selectedPoster)}
+                  disabled={unsharingId === selectedPoster.id}
+                  className="w-full mt-2 rounded-lg text-xs font-medium py-2 transition-colors border flex items-center justify-center gap-1.5 bg-red-500/10 border-red-500/30 text-red-400 hover:bg-red-500/20"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                  {unsharingId === selectedPoster.id ? "Removing..." : "Remove from Showcase"}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => handleShare(selectedPoster)}
+                  disabled={sharingId === selectedPoster.id}
+                  className="w-full mt-2 rounded-lg text-xs font-medium py-2 transition-colors border flex items-center justify-center gap-1.5 bg-neutral-800 hover:bg-neutral-700 border-neutral-700 text-neutral-300"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                  </svg>
+                  {sharingId === selectedPoster.id ? "Sharing..." : "Share to Showcase"}
+                </button>
+              )}
             </div>
           </div>
         </div>

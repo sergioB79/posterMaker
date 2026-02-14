@@ -6,9 +6,24 @@ import { prisma } from "@/lib/prisma";
 export const dynamic = "force-dynamic";
 
 // Public — anyone can browse shared posters
+// ?mine=true — authenticated, returns only the user's shared poster image URLs
 export async function GET(req: NextRequest) {
   try {
     const url = new URL(req.url);
+    const mine = url.searchParams.get("mine") === "true";
+
+    if (mine) {
+      const session = await getServerSession(getAuthOptions());
+      if (!session?.user?.id) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+      const shared = await prisma.sharedPoster.findMany({
+        where: { userId: session.user.id },
+        select: { id: true, imageUrl: true },
+      });
+      return NextResponse.json({ shared });
+    }
+
     const page = Math.max(1, parseInt(url.searchParams.get("page") || "1"));
     const limit = Math.min(50, Math.max(1, parseInt(url.searchParams.get("limit") || "24")));
     const skip = (page - 1) * limit;
@@ -95,14 +110,17 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = await req.json();
-    if (!id) {
-      return NextResponse.json({ error: "Poster ID required" }, { status: 400 });
+    const { id, imageUrl } = await req.json();
+    if (!id && !imageUrl) {
+      return NextResponse.json({ error: "Poster ID or image URL required" }, { status: 400 });
     }
 
     // Only allow deleting own shared posters
     await prisma.sharedPoster.deleteMany({
-      where: { id, userId: session.user.id },
+      where: {
+        ...(id ? { id } : { imageUrl }),
+        userId: session.user.id,
+      },
     });
 
     return NextResponse.json({ removed: true });
