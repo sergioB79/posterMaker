@@ -48,27 +48,41 @@ export default function BriefInput({ value, onChange }: BriefInputProps) {
           {showInfo && (
             <div
               ref={popoverRef}
-              className="absolute left-0 top-6 z-50 w-72 rounded-lg bg-neutral-900 border border-neutral-700 shadow-xl p-3 space-y-2 text-[11px] text-neutral-400 leading-relaxed"
+              className="absolute left-0 top-6 z-50 w-80 rounded-lg bg-neutral-900 border border-neutral-700 shadow-xl p-3 space-y-3 text-[11px] text-neutral-400 leading-relaxed"
             >
-              <p className="text-amber-400 font-medium text-xs">
-                Content Restrictions & Generations
-              </p>
-              <p>
-                Some prompts may be declined or automatically blocked due to content safety rules.
-              </p>
-              <p>
-                The image engine applies internal moderation based on broad content categories (e.g., violence, explicit material, hate symbols, illegal activity, etc.). These restrictions are not based on a public &ldquo;banned word&rdquo; list — the system evaluates the overall meaning and context of each request.
-              </p>
-              <p>
-                Because each generation request is processed immediately and incurs a real cost on our side, <strong className="text-amber-400/80">we are unable to refund or undo a generation once it has been submitted</strong>, even if the result is blocked or declined.
-              </p>
-              <p>
-                We understand this can be frustrating, and we truly appreciate your understanding.
-              </p>
-              <p>
-                If your prompt is rejected, we recommend rephrasing it with neutral, artistic, or symbolic language while avoiding sensitive themes.
-              </p>
-              <p className="text-amber-400/70">
+              <div>
+                <p className="text-amber-400 font-medium text-xs mb-1">
+                  Content Restrictions & Generations
+                </p>
+                <p>
+                  Some prompts may be declined or automatically blocked due to content safety rules.
+                </p>
+                <p className="mt-1">
+                  The image engine applies internal moderation based on broad content categories (e.g., violence, explicit material, hate symbols, illegal activity, etc.). These restrictions are not based on a public &ldquo;banned word&rdquo; list — the system evaluates the overall meaning and context of each request.
+                </p>
+                <p className="mt-1">
+                  Because each generation request is processed immediately and incurs a real cost on our side, <strong className="text-amber-400/80">we are unable to refund or undo a generation once it has been submitted</strong>, even if the result is blocked or declined.
+                </p>
+                <p className="mt-1">
+                  If your prompt is rejected, we recommend rephrasing it with neutral, artistic, or symbolic language while avoiding sensitive themes.
+                </p>
+              </div>
+
+              <div className="border-t border-neutral-800 pt-2">
+                <p className="text-neutral-300 font-medium text-xs mb-1">
+                  Tips for Better Results
+                </p>
+                <ul className="space-y-1 list-none">
+                  <li><span className="text-neutral-500">&#x2022;</span> Keep text short and simple — the fewer words on the poster, the more accurate the rendering.</li>
+                  <li><span className="text-neutral-500">&#x2022;</span> Special characters like <strong className="text-neutral-300">&amp;</strong>, <strong className="text-neutral-300">@</strong>, <strong className="text-neutral-300">#</strong> may occasionally be dropped. If accuracy is critical, spell it out (e.g. &ldquo;and&rdquo; instead of &ldquo;&amp;&rdquo;).</li>
+                  <li><span className="text-neutral-500">&#x2022;</span> Long words or uncommon spellings are more likely to get truncated. Double-check results carefully.</li>
+                  <li><span className="text-neutral-500">&#x2022;</span> Mixing many styles + remixes can cause the engine to prioritize one over the other. Fewer options = more predictable output.</li>
+                  <li><span className="text-neutral-500">&#x2022;</span> If your composition choice (e.g. Image-Focused) isn&apos;t reflected, try reducing the number of text fields or simplifying the style.</li>
+                  <li><span className="text-neutral-500">&#x2022;</span> Generate multiple variations — text accuracy varies between attempts.</li>
+                </ul>
+              </div>
+
+              <p className="text-amber-400/70 border-t border-neutral-800 pt-2">
                 Thank you for helping us keep the platform creative, safe, and sustainable.
               </p>
             </div>
