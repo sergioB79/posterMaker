@@ -172,7 +172,7 @@ ABSOLUTE TEXT RULES — VIOLATING THESE IS A FAILURE:
 2. Every text element MUST appear EXACTLY as written — same spelling, same capitalization, same punctuation, same language. Every single letter matters.
 3. Do NOT rephrase, abbreviate, translate, correct, truncate, or "improve" any text.
 4. Do NOT drop letters from words. "SOLO" must be S-O-L-O (4 letters), not "SOL" (3 letters). "STOKED" must be S-T-O-K-E-D (6 letters), not "STOKE" (5 letters). Render COMPLETE words.
-5. Do NOT add words like "presents", "live", "featuring", "tickets at", or any other text not explicitly provided.
+5. Do NOT skip symbols or punctuation. The ampersand "&" is a VISIBLE character that must appear on the poster — it is NOT a separator. If the text says "SOLO & STOKED", the poster must show the word "SOLO", then the symbol "&", then the word "STOKED".
 6. Do NOT split words across lines mid-word.
 7. If TEXT CONTENT has 3 items, the poster must have exactly 3 text elements — no more, no less.
 8. Text must be LEGIBLE — clear typefaces, sufficient contrast, appropriate sizing.
@@ -239,13 +239,14 @@ export function buildVariationPrompt(
 ): { system: string; user: string } {
   const base = buildPrompt(request);
 
+  // Variation instructions that work WITH any composition, not against it
   const variationInstructions = [
-    "Focus on BOLD TYPOGRAPHY as the dominant visual element. Make the type itself the hero of the poster.",
-    "Focus on STRONG GEOMETRIC COMPOSITION. Use shapes, blocks, and spatial division as the primary visual strategy.",
-    "Focus on ATMOSPHERIC MOOD. Create depth, texture, and emotional resonance through colour and space.",
-    "Focus on MINIMALIST IMPACT. Strip everything to the absolute essential. Maximum effect, minimum elements.",
-    "Focus on DYNAMIC ENERGY. Create movement, tension, and visual rhythm through diagonal elements and contrast.",
-    "Focus on LAYERED COMPLEXITY. Create depth through overlapping elements, transparency, and visual richness.",
+    "Explore a bold, high-contrast typographic treatment. Make the text feel powerful and intentional within the chosen composition.",
+    "Explore strong geometric structure. Use shapes, blocks, and spatial division to reinforce the layout.",
+    "Explore atmospheric depth. Create mood and emotional resonance through colour gradients and spatial layering.",
+    "Explore minimalist restraint. Strip to the absolute essential — maximum impact, minimum clutter.",
+    "Explore dynamic energy. Create movement, tension, and visual rhythm through diagonal elements and contrast.",
+    "Explore layered richness. Add depth through overlapping elements, transparency, and visual texture.",
   ];
 
   const instruction =
@@ -257,7 +258,8 @@ export function buildVariationPrompt(
 
 VARIATION ${variationIndex + 1} OF ${totalVariations}
 ${instruction}
-Make this variation distinctly different from other versions while staying true to the brief and style.
-REMINDER: Use ONLY the provided text — do not add or change ANY words. Spell every word COMPLETELY — do not drop trailing letters. Verify each word has the correct number of characters before finalizing.`,
+IMPORTANT: Follow the COMPOSITION section above — it defines the layout hierarchy (image-focused, typographic, etc.). The variation direction above is about visual treatment, NOT about overriding the composition.
+Make this variation distinctly different from other versions while staying true to the brief, style, and composition.
+REMINDER: Use ONLY the provided text — do not add, remove, or change ANY words or symbols. Spell every word COMPLETELY — do not drop trailing letters. The "&" symbol is literal text that must appear. Verify each word has the correct number of characters before finalizing.`,
   };
 }
