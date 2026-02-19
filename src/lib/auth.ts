@@ -44,14 +44,34 @@ export function getAuthOptions(): NextAuthOptions {
     },
     events: {
       async createUser({ user }) {
-        await prisma.creditTransaction.create({
-          data: {
-            userId: user.id,
-            amount: 2,
-            type: "signup_bonus",
-            reference: "welcome",
-          },
+        const email = user.email?.toLowerCase();
+        if (!email) return;
+
+        // Check if this email already received the signup bonus
+        const alreadyUsed = await prisma.usedSignupEmail.findUnique({
+          where: { email },
         });
+
+        if (alreadyUsed) return; // No free credits for re-registrations
+
+        // Grant signup bonus and record the email
+        await prisma.$transaction([
+          prisma.user.update({
+            where: { id: user.id },
+            data: { credits: 2 },
+          }),
+          prisma.creditTransaction.create({
+            data: {
+              userId: user.id,
+              amount: 2,
+              type: "signup_bonus",
+              reference: "welcome",
+            },
+          }),
+          prisma.usedSignupEmail.create({
+            data: { email },
+          }),
+        ]);
       },
     },
     pages: {

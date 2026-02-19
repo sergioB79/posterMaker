@@ -16,7 +16,7 @@ model User {
   email         String?   @unique
   emailVerified DateTime?
   image         String?
-  credits       Int       @default(2) // Free credits on signup
+  credits       Int       @default(0) // Granted conditionally in createUser event
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -111,4 +111,12 @@ model SharedPoster {
 
   @@index([userId])
   @@index([createdAt])
+}
+
+// ─── Anti-abuse: track emails that received signup bonus ─────
+
+model UsedSignupEmail {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  grantedAt DateTime @default(now())
 }
