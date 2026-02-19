@@ -9,14 +9,31 @@ export default function SignInPage() {
   const [emailSent, setEmailSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [agreed, setAgreed] = useState(false);
+  const [error, setError] = useState<string>();
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !agreed) return;
     setLoading(true);
-    await signIn("email", { email, redirect: false });
-    setEmailSent(true);
-    setLoading(false);
+    setError(undefined);
+    try {
+      const result = await signIn("email", { email, redirect: false });
+      if (result?.error) {
+        setError(
+          result.error === "EmailSignin"
+            ? "Failed to send email. Please check the address or try Google sign-in."
+            : result.error === "Configuration"
+            ? "Email sign-in is not configured yet. Please use Google sign-in."
+            : `Sign-in failed: ${result.error}`
+        );
+      } else {
+        setEmailSent(true);
+      }
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -75,12 +92,25 @@ export default function SignInPage() {
             <div className="flex-1 h-px bg-neutral-800" />
           </div>
 
+          {error && (
+            <div className="rounded-lg bg-red-500/10 border border-red-500/20 px-3 py-2 text-xs text-red-400">
+              {error}
+            </div>
+          )}
+
           {emailSent ? (
             <div className="text-center py-4">
               <p className="text-sm text-neutral-300">Check your email</p>
               <p className="text-xs text-neutral-500 mt-1">
                 We sent a magic link to <strong className="text-neutral-300">{email}</strong>
               </p>
+              <button
+                type="button"
+                onClick={() => { setEmailSent(false); setError(undefined); }}
+                className="text-xs text-orange-400 hover:text-orange-300 mt-3"
+              >
+                Didn&apos;t get it? Try again
+              </button>
             </div>
           ) : (
             <form onSubmit={handleEmailSignIn} className="space-y-3">
